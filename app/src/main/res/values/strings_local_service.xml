@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="local_service_started">Local service started.</string>
+	<string name="local_service_stopped">Local service stopped.</string>
+	<string name="local_service_connected">Local service connected.</string>
+	<string name="local_service_disconnected">Local service disconnected.</string>
+</resources>

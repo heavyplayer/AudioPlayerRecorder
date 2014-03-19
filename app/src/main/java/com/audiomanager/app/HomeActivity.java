@@ -5,8 +5,10 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import com.audiomanager.fragment.AudioRecorderFragment;
 import com.audiomanager.obj.Item;
 
 
@@ -49,5 +51,9 @@ public class HomeActivity extends ActionBarActivity {
 		public ItemAdapter(Context context, Item[] objects) {
 			super(context, R.layout.home_list_item, R.id.item_title, objects);
 		}
+	}
+
+	public void onRecord(View v) {
+		new AudioRecorderFragment().show(getSupportFragmentManager(), AudioRecorderFragment.TAG);
 	}
 }
