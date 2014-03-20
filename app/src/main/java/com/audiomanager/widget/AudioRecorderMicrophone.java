@@ -80,10 +80,11 @@ public class AudioRecorderMicrophone extends ViewGroup {
 		final int microphoneMeasuredHeight = mMicrophoneView.getMeasuredHeight();
 
 		// Measure background to be the same size as the microphone.
+		final int circleDiameter = Math.max(microphoneMeasuredWidth, microphoneMeasuredHeight);
 		measureChild(
 				mBackgroundView,
-				MeasureSpec.makeMeasureSpec(microphoneMeasuredWidth, MeasureSpec.EXACTLY),
-				MeasureSpec.makeMeasureSpec(microphoneMeasuredHeight, MeasureSpec.EXACTLY));
+				MeasureSpec.makeMeasureSpec(circleDiameter, MeasureSpec.EXACTLY),
+				MeasureSpec.makeMeasureSpec(circleDiameter, MeasureSpec.EXACTLY));
 
 		final int width, height;
 		final LayoutParams lp = getLayoutParams();
