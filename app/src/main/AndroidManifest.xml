@@ -12,7 +12,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name="com.audiomanager.app.HomeActivity"
+            android:name="com.audiomanager.app.ServiceActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -21,6 +21,7 @@
             </intent-filter>
         </activity>
 
+		<service android:name="com.audiomanager.service.AudioPlayerService"/>
 		<service android:name="com.audiomanager.service.AudioRecorderService"/>
     </application>
 
