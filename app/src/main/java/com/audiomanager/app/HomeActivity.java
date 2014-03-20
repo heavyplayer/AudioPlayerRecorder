@@ -6,14 +6,16 @@ import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 import com.audiomanager.fragment.AudioRecorderFragment;
 import com.audiomanager.obj.Item;
 
 
-public class HomeActivity extends ActionBarActivity {
+public class HomeActivity extends ActionBarActivity implements AdapterView.OnItemClickListener {
 	private static Item[] sItems = {
 			new Item(0),
 			new Item(1),
@@ -31,6 +33,7 @@ public class HomeActivity extends ActionBarActivity {
 			new Item(14),
 	};
 
+	protected TextView mTitleView;
 	protected ListView mListView;
 
     @Override
@@ -38,8 +41,14 @@ public class HomeActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+	    mTitleView = (TextView)findViewById(android.R.id.title);
+
 	    mListView = (ListView)findViewById(android.R.id.list);
+	    mListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 	    mListView.setAdapter(onCreateAdapter(this, sItems));
+	    mListView.setOnItemClickListener(this);
+	    // Select first item.
+	    mListView.performItemClick(mListView.getChildAt(0), 0, mListView.getItemIdAtPosition(0));
     }
 
 	protected ListAdapter onCreateAdapter(Context context, Item[] objects) {
@@ -48,11 +57,16 @@ public class HomeActivity extends ActionBarActivity {
 
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.home, menu);
         return true;
     }
+
+	@Override
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		final String fileName = ((Item)parent.getItemAtPosition(position)).getFileName();
+		mTitleView.setText(fileName);
+	}
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -67,7 +81,14 @@ public class HomeActivity extends ActionBarActivity {
     }
 
 	public void onRecord(View v) {
-		new AudioRecorderFragment().show(getSupportFragmentManager(), AudioRecorderFragment.TAG);
+		final String fileName = getSelectedItem().getFileName();
+		if(fileName != null)
+			AudioRecorderFragment.createInstance(fileName)
+					.show(getSupportFragmentManager(), AudioRecorderFragment.TAG);
+	}
+
+	protected Item getSelectedItem() {
+		return (Item)mListView.getItemAtPosition(mListView.getCheckedItemPosition());
 	}
 
 	protected class ItemAdapter extends ArrayAdapter<Item> {

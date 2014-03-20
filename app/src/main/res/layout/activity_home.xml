@@ -9,6 +9,13 @@
 		tools:context="com.audiomanager.app.HomeActivity"
 		android:orientation="vertical">
 
+	<TextView
+			android:id="@android:id/title"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textSize="20sp"
+			android:layout_marginBottom="32dip"/>
+
 	<ListView
 			android:id="@android:id/list"
 			android:layout_width="match_parent"

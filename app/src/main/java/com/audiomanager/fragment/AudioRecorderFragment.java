@@ -22,8 +22,20 @@ import com.audiomanager.widget.AudioRecorderMicrophone;
 public class AudioRecorderFragment extends DialogFragment implements DialogInterface.OnClickListener {
 	public static final String TAG = AudioRecorderFragment.class.getSimpleName();
 
+	private static final String ARG_FILE_NAME = "arg_file_name";
+
 	private boolean mServiceIsBound = false;
 	private ServiceConnection mServiceConnection = new AudioRecorderServiceConnection();
+
+	public static AudioRecorderFragment createInstance(String fileName) {
+		final Bundle args = new Bundle();
+		args.putString(ARG_FILE_NAME, fileName);
+
+		final AudioRecorderFragment fragment = new AudioRecorderFragment();
+		fragment.setArguments(args);
+
+		return fragment;
+	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -69,7 +81,9 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 	}
 
 	protected void startService() {
-		getActivity().startService(new Intent(getActivity(), AudioRecorderService.class));
+		final Activity activity = getActivity();
+		final String fileName = getArguments().getString(ARG_FILE_NAME);
+		activity.startService(AudioRecorderService.getLaunchIntent(activity, fileName));
 	}
 
 	protected void bindService() {

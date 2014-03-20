@@ -1,6 +1,7 @@
 package com.audiomanager.service;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.media.MediaRecorder;
 import android.os.Binder;
@@ -13,34 +14,37 @@ import com.audiomanager.app.R;
 public class AudioRecorderService extends Service {
 	public static final String TAG = AudioRecorderService.class.getSimpleName();
 
+	public static final String EXTRA_FILE_NAME = "extra_file_name";
+
 	// This is the object that receives interactions from clients.  See
 	// RemoteService for a more complete example.
 	private final IBinder mBinder = new LocalBinder();
 
+	private String mFileName;
 	private MediaRecorder mRecorder;
 
-	/**
-	 * Class for clients to access.  Because we know this service always
-	 * runs in the same process as its clients, we don't need to deal with
-	 * IPC.
-	 */
-	public class LocalBinder extends Binder {
-		public AudioRecorderService getService() {
-			return AudioRecorderService.this;
-		}
+	public static Intent getLaunchIntent(Context context, String fileName) {
+		final Intent intent = new Intent(context, AudioRecorderService.class);
+		intent.putExtra(EXTRA_FILE_NAME, fileName);
+		return intent;
 	}
 
 	@Override
 	public void onCreate() {
-		initMediaRecorder();
-
 		// Tell the user we started.
 		Toast.makeText(this, R.string.local_service_started, Toast.LENGTH_SHORT).show();
 	}
 
-	protected void initMediaRecorder() {
-		final String fileName = "filename1";
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		if(mRecorder == null)
+			initMediaRecorder(intent.getStringExtra(EXTRA_FILE_NAME));
 
+		// We want this service to continue running until it is explicitly stopped, so return sticky.
+		return START_STICKY;
+	}
+
+	protected void initMediaRecorder(String fileName) {
 		mRecorder = new MediaRecorder();
 		mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
 		mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
@@ -61,12 +65,6 @@ public class AudioRecorderService extends Service {
 		return Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + fileName;
 	}
 
-	@Override
-	public int onStartCommand(Intent intent, int flags, int startId) {
-		// We want this service to continue running until it is explicitly stopped, so return sticky.
-		return START_STICKY;
-	}
-
 	public MediaRecorder getMediaRecorder() {
 		return mRecorder;
 	}
@@ -85,5 +83,16 @@ public class AudioRecorderService extends Service {
 	@Override
 	public IBinder onBind(Intent intent) {
 		return mBinder;
+	}
+
+	/**
+	 * Class for clients to access.  Because we know this service always
+	 * runs in the same process as its clients, we don't need to deal with
+	 * IPC.
+	 */
+	public class LocalBinder extends Binder {
+		public AudioRecorderService getService() {
+			return AudioRecorderService.this;
+		}
 	}
 }

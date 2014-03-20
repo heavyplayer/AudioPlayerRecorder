@@ -15,6 +15,8 @@
 	<com.audiomanager.widget.AudioPlayerSeekBar
 			android:id="@+id/item_seek_bar"
 			android:layout_width="match_parent"
-			android:layout_height="wrap_content" />
+			android:layout_height="wrap_content"
+			android:focusable="false"
+			android:layout_marginLeft="64dip"/>
 
 </LinearLayout>

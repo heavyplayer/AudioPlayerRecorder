@@ -11,6 +11,10 @@ public class Item {
 		return mId;
 	}
 
+	public String getFileName() {
+		return "filename"+mId;
+	}
+
 	@Override
 	public String toString() {
 		return "Item "+mId;

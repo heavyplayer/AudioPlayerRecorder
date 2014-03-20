@@ -15,7 +15,7 @@ import com.audiomanager.obj.Item;
 import com.audiomanager.service.AudioPlayerService;
 import com.audiomanager.widget.AudioPlayerSeekBar;
 
-public class ServiceActivity extends HomeActivity {
+public class PlayerActivity extends HomeActivity {
 	private static final String STATE_SERVICE_IS_STARTED = "service_is_started";
 
 	private AudioPlayerService mBoundService;
@@ -67,7 +67,10 @@ public class ServiceActivity extends HomeActivity {
 	public void onPlay(View v) {
 		final Button button = (Button)v;
 		if("Play".equals(button.getText())) {
-			startService(new Intent(this, AudioPlayerService.class));
+			final Item item = getSelectedItem();
+			final Intent audioPlayerIntent =
+					AudioPlayerService.getLaunchIntent(this, item.getId(), item.getFileName());
+			startService(audioPlayerIntent);
 			mServiceIsStarted = true;
 			bindService();
 			button.setText("Stop");
@@ -107,7 +110,7 @@ public class ServiceActivity extends HomeActivity {
 			mListView.invalidateViews();
 
 			// Tell the user about this for our demo.
-			Toast.makeText(ServiceActivity.this, R.string.local_service_connected, Toast.LENGTH_SHORT).show();
+			Toast.makeText(PlayerActivity.this, R.string.local_service_connected, Toast.LENGTH_SHORT).show();
 		}
 
 		@Override
@@ -117,7 +120,7 @@ public class ServiceActivity extends HomeActivity {
 			// Because it is running in our same process, we should never
 			// see this happen.
 			onServiceUnbind();
-			Toast.makeText(ServiceActivity.this, R.string.local_service_disconnected, Toast.LENGTH_SHORT).show();
+			Toast.makeText(PlayerActivity.this, R.string.local_service_disconnected, Toast.LENGTH_SHORT).show();
 		}
 	}
 
@@ -140,7 +143,7 @@ public class ServiceActivity extends HomeActivity {
 
 			if(mServiceIsBound && mBoundService != null) {
 				final AudioPlayerSeekBar seekBar = (AudioPlayerSeekBar) view.findViewById(R.id.item_seek_bar);
-				if(seekBar != null && mBoundService.getId() == getItem(position).getId())
+				if(seekBar != null && mBoundService.getItemId() == getItem(position).getId())
 					seekBar.setMediaPlayer(mBoundService.getMediaPlayer());
 			}
 
