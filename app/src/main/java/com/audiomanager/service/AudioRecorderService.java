@@ -6,13 +6,20 @@ import android.content.Intent;
 import android.media.MediaRecorder;
 import android.os.Binder;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 import com.audiomanager.app.R;
+import com.audiomanager.widget.AudioRecorderMicrophone;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class AudioRecorderService extends Service {
 	public static final String TAG = AudioRecorderService.class.getSimpleName();
+
+	private final static int UPDATE_INTERVAL_MS = 100;
 
 	public static final String EXTRA_FILE_NAME = "extra_file_name";
 
@@ -20,7 +27,11 @@ public class AudioRecorderService extends Service {
 	// RemoteService for a more complete example.
 	private final IBinder mBinder = new LocalBinder();
 
-	private String mFileName;
+	private Handler mHandler;
+	private AmplitudeUpdater mAmplitudeUpdater = new AmplitudeUpdater();
+
+	private Set<AudioRecorderMicrophone> mMicrophones = new HashSet<>(1);
+
 	private MediaRecorder mRecorder;
 
 	public static Intent getLaunchIntent(Context context, String fileName) {
@@ -31,6 +42,8 @@ public class AudioRecorderService extends Service {
 
 	@Override
 	public void onCreate() {
+		mHandler = new Handler();
+
 		// Tell the user we started.
 		Toast.makeText(this, R.string.local_service_started, Toast.LENGTH_SHORT).show();
 	}
@@ -59,14 +72,11 @@ public class AudioRecorderService extends Service {
 
 		// Start recording.
 		mRecorder.start();
+		mHandler.post(mAmplitudeUpdater);
 	}
 
 	protected String generateOutputFilePath(String fileName) {
 		return Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + fileName;
-	}
-
-	public MediaRecorder getMediaRecorder() {
-		return mRecorder;
 	}
 
 	@Override
@@ -91,8 +101,30 @@ public class AudioRecorderService extends Service {
 	 * IPC.
 	 */
 	public class LocalBinder extends Binder {
-		public AudioRecorderService getService() {
-			return AudioRecorderService.this;
+		public void registerAudioRecorderMicrophone(AudioRecorderMicrophone microphone) {
+			mMicrophones.add(microphone);
+
+			mHandler.removeCallbacks(mAmplitudeUpdater);
+			mHandler.post(mAmplitudeUpdater);
+		}
+
+		public void unregisterAudioRecorderMicrophone(AudioRecorderMicrophone microphone) {
+			mMicrophones.remove(microphone);
+		}
+	}
+
+	private class AmplitudeUpdater implements Runnable {
+		@Override
+		public void run() {
+			if(mRecorder != null && mMicrophones.size() > 0) {
+				final int amplitude = mRecorder.getMaxAmplitude();
+
+				for(AudioRecorderMicrophone microphone : mMicrophones)
+					microphone.updateAmplitude(amplitude, UPDATE_INTERVAL_MS);
+
+				// Post animation runnable to update the animation.
+				mHandler.postDelayed(mAmplitudeUpdater, UPDATE_INTERVAL_MS);
+			}
 		}
 	}
 }

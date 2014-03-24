@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.DialogFragment;
@@ -24,7 +23,7 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 
 	private static final String ARG_FILE_NAME = "arg_file_name";
 
-	private boolean mServiceIsBound = false;
+	private AudioRecorderService.LocalBinder mAudioRecorderBinder;
 	private ServiceConnection mServiceConnection = new AudioRecorderServiceConnection();
 
 	public static AudioRecorderFragment createInstance(String fileName) {
@@ -95,17 +94,15 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 				new Intent(getActivity(), AudioRecorderService.class),
 				mServiceConnection,
 				Context.BIND_AUTO_CREATE);
-		mServiceIsBound = true;
 	}
 
 	protected void unbindService() {
-		if (mServiceIsBound) {
-			// Clear media recorder.
-			setMicrophoneMediaRecorder(null);
+		if(mAudioRecorderBinder != null) {
+			unregisterMicrophone();
 
 			// Detach our existing connection.
 			getActivity().unbindService(mServiceConnection);
-			mServiceIsBound = false;
+			mAudioRecorderBinder = null;
 		}
 	}
 
@@ -114,11 +111,18 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 		getActivity().stopService(new Intent(getActivity(), AudioRecorderService.class));
 	}
 
-	protected void setMicrophoneMediaRecorder(MediaRecorder recorder) {
-		// Animate microphone view.
+	protected void registerMicrophone() {
 		final AudioRecorderMicrophone microphone =
 				(AudioRecorderMicrophone)getDialog().findViewById(android.R.id.input);
-		microphone.setMediaRecorder(recorder);
+		if(mAudioRecorderBinder != null && microphone != null)
+			mAudioRecorderBinder.registerAudioRecorderMicrophone(microphone);
+	}
+
+	protected void unregisterMicrophone() {
+		final AudioRecorderMicrophone microphone =
+				(AudioRecorderMicrophone)getDialog().findViewById(android.R.id.input);
+		if(mAudioRecorderBinder != null && microphone != null)
+			mAudioRecorderBinder.unregisterAudioRecorderMicrophone(microphone);
 	}
 
 	private class AudioRecorderServiceConnection implements ServiceConnection {
@@ -131,8 +135,8 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 			// cast its IBinder to a concrete class and directly access it.
 
 			// Configure microphone media recorder. Used to update sound amplitude animation.
-			final AudioRecorderService boundService = ((AudioRecorderService.LocalBinder)service).getService();
-			setMicrophoneMediaRecorder(boundService.getMediaRecorder());
+			mAudioRecorderBinder = (AudioRecorderService.LocalBinder)service;
+			registerMicrophone();
 
 			// Tell the user about this for our demo.
 			Toast.makeText(getActivity(), R.string.local_service_connected, Toast.LENGTH_SHORT).show();
@@ -144,7 +148,8 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 			// unexpectedly disconnected -- that is, its process crashed.
 			// Because it is running in our same process, we should never
 			// see this happen.
-			mServiceIsBound = false;
+			mAudioRecorderBinder = null;
+
 			Toast.makeText(getActivity(), R.string.local_service_disconnected, Toast.LENGTH_SHORT).show();
 		}
 	}

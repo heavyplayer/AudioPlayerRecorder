@@ -6,9 +6,7 @@ import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
-import android.media.MediaRecorder;
 import android.os.Build;
-import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.View;
@@ -19,18 +17,15 @@ import android.widget.ImageView;
 import com.audiomanager.app.R;
 
 public class AudioRecorderMicrophone extends ViewGroup {
-	private static final int ANIMATION_INTERVAL = 100;
-
 	private static final float MAX_RELATIVE_SCALE = 0.8f;
-	private static final int MAX_AMPLITUDE = 20000; // Real maximum value for MediaRecorder.getMaxAmplitude() is Integer.MAX_VALUE.
+	private static final int MAX_AMPLITUDE_DEFAULT = 20000; // Real maximum value for MediaRecorder.getMaxAmplitude() is Integer.MAX_VALUE.
 
 	private ImageView mMicrophoneView;
 	private View mBackgroundView;
 
-	private MediaRecorder mMediaRecorder;
+	private int mMaxAmplitude = MAX_AMPLITUDE_DEFAULT;
 
-	private AnimationRunnable mAnimationRunnable = new AnimationRunnable();
-	private float mAnimationScale = 1.0f; // In the beginning, the background view has the same size as the microphone view.
+	private float mCurrentAnimationScale = 1.0f; // In the beginning, the background view has the same size as the microphone view.
 
 	public AudioRecorderMicrophone(Context context) {
 		super(context);
@@ -118,47 +113,30 @@ public class AudioRecorderMicrophone extends ViewGroup {
 		view.layout(left, top, left + measuredWidth, top + measuredHeight);
 	}
 
-	public void setMediaRecorder(MediaRecorder recorder) {
-		mMediaRecorder = recorder;
-
-		if(mMediaRecorder != null) {
-			final Handler handler = getHandler();
-			if(handler != null)
-				handler.removeCallbacks(mAnimationRunnable);
-
-			postDelayed(mAnimationRunnable, ANIMATION_INTERVAL);
-		}
+	public void setMaxAmplitude(int amplitude) {
+		mMaxAmplitude = amplitude;
 	}
 
-	private class AnimationRunnable implements Runnable {
-		@Override
-		public void run() {
-			final MediaRecorder recorder = mMediaRecorder;
-			if(recorder != null) {
-				final float oldScale = mAnimationScale;
+	public void updateAmplitude(int amplitude, int duration) {
+		final float oldScale = mCurrentAnimationScale;
 
-				// Calculate new scale.
-				final float relativeScale = Math.min(recorder.getMaxAmplitude(), MAX_AMPLITUDE) / (float)MAX_AMPLITUDE;
-				mAnimationScale = 1.0f + (relativeScale * MAX_RELATIVE_SCALE);
+		// Calculate new scale.
+		final float relativeScale = Math.min(amplitude, mMaxAmplitude) / (float)mMaxAmplitude;
+		mCurrentAnimationScale = 1.0f + (relativeScale * MAX_RELATIVE_SCALE);
 
-				// Transition from old scale to new scale during the update interval.
-				mBackgroundView.clearAnimation();
-				final Animation animation = new ScaleAnimation(
-						oldScale,
-						mAnimationScale,
-						oldScale,
-						mAnimationScale,
-						Animation.RELATIVE_TO_SELF,
-						0.5f,
-						Animation.RELATIVE_TO_SELF,
-						0.5f);
-				animation.setFillAfter(true);
-				animation.setDuration(ANIMATION_INTERVAL);
-				mBackgroundView.startAnimation(animation);
-
-				// Post animation runnable to update the animation.
-				postDelayed(mAnimationRunnable, ANIMATION_INTERVAL);
-			}
-		}
+		// Transition from old scale to new scale during the update interval.
+		mBackgroundView.clearAnimation();
+		final Animation animation = new ScaleAnimation(
+				oldScale,
+				mCurrentAnimationScale,
+				oldScale,
+				mCurrentAnimationScale,
+				Animation.RELATIVE_TO_SELF,
+				0.5f,
+				Animation.RELATIVE_TO_SELF,
+				0.5f);
+		animation.setFillAfter(true);
+		animation.setDuration(duration);
+		mBackgroundView.startAnimation(animation);
 	}
 }
