@@ -51,6 +51,9 @@ public class PlayerActivity extends RecorderActivity {
 		super.onPause();
 
 		unbindService();
+
+		if(mIsPortrait == isPortrait())
+			stopService(new Intent(this, AudioPlayerService.class));
 	}
 
 	protected void bindService() {
@@ -66,14 +69,6 @@ public class PlayerActivity extends RecorderActivity {
 			// Detach our existing connection.
 			unbindService(mServiceConnection);
 		}
-	}
-
-	@Override
-	protected void onStop() {
-		super.onStop();
-
-		if(mIsPortrait == isPortrait())
-			stopService(new Intent(this, AudioPlayerService.class));
 	}
 
 	private class AudioPlayerServiceConnection implements ServiceConnection {
