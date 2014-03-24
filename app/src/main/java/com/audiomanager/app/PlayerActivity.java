@@ -14,7 +14,7 @@ import com.audiomanager.obj.Item;
 import com.audiomanager.service.AudioPlayerService;
 import com.audiomanager.widget.AudioPlayer;
 
-public class PlayerActivity extends HomeActivity {
+public class PlayerActivity extends RecorderActivity {
 	private AudioPlayerService.LocalBinder mAudioPlayerBinder;
 	private AudioPlayerServiceConnection mServiceConnection = new AudioPlayerServiceConnection();
 

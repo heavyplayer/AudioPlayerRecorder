@@ -15,7 +15,7 @@ import com.audiomanager.fragment.AudioRecorderFragment;
 import com.audiomanager.obj.Item;
 
 
-public class HomeActivity extends ActionBarActivity implements AdapterView.OnItemClickListener {
+public class RecorderActivity extends ActionBarActivity implements AdapterView.OnItemClickListener {
 	private static Item[] sItems = {
 			new Item(0),
 			new Item(1),
@@ -39,7 +39,7 @@ public class HomeActivity extends ActionBarActivity implements AdapterView.OnIte
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_home);
+        setContentView(R.layout.activity_main);
 
 	    mTitleView = (TextView)findViewById(android.R.id.title);
 
