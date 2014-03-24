@@ -1,4 +1,4 @@
-package com.audiomanager.widget;
+package com.heavyplayer.audiomanager.widget;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -14,7 +14,7 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.ScaleAnimation;
 import android.widget.ImageView;
-import com.audiomanager.app.R;
+import com.heavyplayer.audiomanager.R;
 
 public class AudioRecorderMicrophone extends ViewGroup {
 	private static final float MAX_RELATIVE_SCALE = 0.8f;

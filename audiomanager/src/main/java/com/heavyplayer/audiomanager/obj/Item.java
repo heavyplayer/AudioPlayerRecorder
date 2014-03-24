@@ -1,4 +1,4 @@
-package com.audiomanager.obj;
+package com.heavyplayer.audiomanager.obj;
 
 public class Item {
 	private long mId;

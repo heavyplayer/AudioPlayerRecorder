@@ -1,4 +1,4 @@
-package com.audiomanager.service;
+package com.heavyplayer.audiomanager.service;
 
 import android.app.Service;
 import android.content.Context;
@@ -10,8 +10,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
-import com.audiomanager.app.R;
-import com.audiomanager.widget.AudioRecorderMicrophone;
+import com.heavyplayer.audiomanager.R;
+import com.heavyplayer.audiomanager.widget.AudioRecorderMicrophone;
 
 import java.util.HashSet;
 import java.util.Set;

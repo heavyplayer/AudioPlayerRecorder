@@ -1,4 +1,4 @@
-package com.audiomanager.widget;
+package com.heavyplayer.audiomanager.widget;
 
 import android.content.Context;
 import android.util.AttributeSet;

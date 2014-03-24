@@ -1,4 +1,4 @@
-package com.audiomanager.app;
+package com.heavyplayer.audiomanager.activity;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -10,9 +10,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListAdapter;
 import android.widget.Toast;
-import com.audiomanager.obj.Item;
-import com.audiomanager.service.AudioPlayerService;
-import com.audiomanager.widget.AudioPlayer;
+import com.heavyplayer.audiomanager.R;
+import com.heavyplayer.audiomanager.obj.Item;
+import com.heavyplayer.audiomanager.service.AudioPlayerService;
+import com.heavyplayer.audiomanager.widget.AudioPlayer;
 
 public class PlayerActivity extends RecorderActivity {
 	private AudioPlayerService.LocalBinder mAudioPlayerBinder;

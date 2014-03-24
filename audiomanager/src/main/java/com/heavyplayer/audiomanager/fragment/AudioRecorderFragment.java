@@ -1,4 +1,4 @@
-package com.audiomanager.fragment;
+package com.heavyplayer.audiomanager.fragment;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -14,9 +14,9 @@ import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Toast;
-import com.audiomanager.app.R;
-import com.audiomanager.service.AudioRecorderService;
-import com.audiomanager.widget.AudioRecorderMicrophone;
+import com.heavyplayer.audiomanager.R;
+import com.heavyplayer.audiomanager.service.AudioRecorderService;
+import com.heavyplayer.audiomanager.widget.AudioRecorderMicrophone;
 
 public class AudioRecorderFragment extends DialogFragment implements DialogInterface.OnClickListener {
 	public static final String TAG = AudioRecorderFragment.class.getSimpleName();

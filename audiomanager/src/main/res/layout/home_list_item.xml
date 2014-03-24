@@ -12,7 +12,7 @@
 			android:layout_height="wrap_content"
 			android:textSize="14sp"/>
 
-	<com.audiomanager.widget.AudioPlayer
+	<com.heavyplayer.audiomanager.widget.AudioPlayer
 			android:id="@+id/item_audio_player"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"

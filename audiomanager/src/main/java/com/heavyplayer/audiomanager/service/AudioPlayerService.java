@@ -1,4 +1,4 @@
-package com.audiomanager.service;
+package com.heavyplayer.audiomanager.service;
 
 import android.app.Service;
 import android.content.Intent;
@@ -12,8 +12,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Toast;
-import com.audiomanager.app.R;
-import com.audiomanager.widget.AudioPlayer;
+import com.heavyplayer.audiomanager.R;
+import com.heavyplayer.audiomanager.widget.AudioPlayer;
 
 import java.io.IOException;
 import java.util.HashMap;

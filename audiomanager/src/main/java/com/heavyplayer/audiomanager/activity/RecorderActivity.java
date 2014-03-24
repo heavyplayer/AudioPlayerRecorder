@@ -1,4 +1,4 @@
-package com.audiomanager.app;
+package com.heavyplayer.audiomanager.activity;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -11,9 +11,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import com.audiomanager.fragment.AudioRecorderFragment;
-import com.audiomanager.obj.Item;
-
+import com.heavyplayer.audiomanager.R;
+import com.heavyplayer.audiomanager.fragment.AudioRecorderFragment;
+import com.heavyplayer.audiomanager.obj.Item;
 
 public class RecorderActivity extends ActionBarActivity implements AdapterView.OnItemClickListener {
 	private static Item[] sItems = {
