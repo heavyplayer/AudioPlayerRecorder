@@ -93,7 +93,7 @@ public class RecorderActivity extends ActionBarActivity implements AdapterView.O
 
 	protected class ItemAdapter extends ArrayAdapter<Item> {
 		public ItemAdapter(Context context, Item[] objects) {
-			super(context, R.layout.home_list_item, R.id.item_title, objects);
+			super(context, R.layout.audio_player_list_item, R.id.item_title, objects);
 		}
 	}
 }

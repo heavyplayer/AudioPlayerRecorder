@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+	<attr name="playSrc" format="reference"/>
+	<attr name="pauseSrc" format="reference"/>
+
+	<declare-styleable name="PlayPauseImageButton">
+		<attr name="playSrc"/>
+		<attr name="pauseSrc"/>
+	</declare-styleable>
+
+	<declare-styleable name="AudioPlayer">
+		<attr name="playSrc"/>
+		<attr name="pauseSrc"/>
+	</declare-styleable>
+
+</resources>

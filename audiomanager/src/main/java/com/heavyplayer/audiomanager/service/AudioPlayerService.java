@@ -9,11 +9,11 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Toast;
 import com.heavyplayer.audiomanager.R;
 import com.heavyplayer.audiomanager.widget.AudioPlayer;
+import com.heavyplayer.audiomanager.widget.PlayPauseImageButton;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -21,7 +21,6 @@ import java.util.Map;
 
 public class AudioPlayerService extends Service implements
 		MediaPlayer.OnPreparedListener,
-		MediaPlayer.OnSeekCompleteListener,
 		MediaPlayer.OnBufferingUpdateListener,
 		MediaPlayer.OnCompletionListener {
 	public static final String TAG = AudioPlayerService.class.getSimpleName();
@@ -61,25 +60,53 @@ public class AudioPlayerService extends Service implements
 	}
 
 	protected void startPlay(long id, String fileName) {
-		mPlayingId = id;
+		if(mPlayingId == null || mPlayingId != id) {
+			if(mPlayingId != null && mPlayer != null && mPlayer.isPlaying()) {
+				// Before changing players, stop the previous player if it is playing.
+				stopPlay(mPlayingId, mPlayer.getDuration(), mPlayer.getCurrentPosition());
+			}
 
-		if(mPlayer == null) {
-			mPlayer = new MediaPlayer();
-			mPlayer.setOnBufferingUpdateListener(this);
-			mPlayer.setOnCompletionListener(this);
-			mPlayer.setOnPreparedListener(this);
-			mPlayer.setOnSeekCompleteListener(this);
+			mPlayingId = id;
+
+			if (mPlayer == null) {
+				mPlayer = new MediaPlayer();
+				mPlayer.setOnBufferingUpdateListener(this);
+				mPlayer.setOnCompletionListener(this);
+				mPlayer.setOnPreparedListener(this);
+			} else {
+				mHandler.removeCallbacks(mProgressUpdater);
+				mPlayer.reset();
+			}
+
+			try {
+				mPlayer.setDataSource(generateInputFilePath(fileName));
+				mPlayer.prepare();
+			} catch (IOException | IllegalStateException e) {
+				Log.w(TAG, e);
+			}
 		}
 		else {
-			mHandler.removeCallbacks(mProgressUpdater);
-			mPlayer.reset();
+			dispatchPlayerStart(mPlayer);
 		}
+	}
 
-		try {
-			mPlayer.setDataSource(generateInputFilePath(fileName));
-			mPlayer.prepare();
-		} catch (IOException | IllegalStateException e) {
-			Log.w(TAG, e);
+	protected void pausePlay(long id) {
+		if(mPlayingId == id)
+			mPlayer.pause();
+	}
+
+	protected void stopPlay(long id, int max, int progress) {
+		final AudioPlayer audioPlayer = mAudioPlayers.get(id);
+		if(audioPlayer != null) {
+			final PlayPauseImageButton button = audioPlayer.getButton();
+			button.setPlayPause(false);
+
+			final SeekBar seekBar = audioPlayer.getSeekBar();
+			seekBar.setMax(max);
+			seekBar.setProgress(progress); // This will indirectly call updateProgressInfo().
+		}
+		else {
+			updateProgressInfo(id, max, progress);
 		}
 	}
 
@@ -96,21 +123,18 @@ public class AudioPlayerService extends Service implements
 				final SeekBar seekBar = audioPlayer.getSeekBar();
 				adjustSeekBarProgressToDuration(seekBar, mp.getDuration());
 
+				dispatchPlayerStart(mp);
+
+				// Resume progress.
 				final ProgressInfo progressInfo = getProgressInfo(id);
 				final int progress = progressInfo.getProgress();
-				if(progress == 0) {
-					mp.start();
-					mHandler.post(mProgressUpdater);
-				}
-				else if(progress < mp.getDuration()) {
+				if(progress > 0 && progress < mp.getDuration())
 					mp.seekTo(seekBar.getProgress());
-				}
 			}
 		}
 	}
 
-	@Override
-	public void onSeekComplete(MediaPlayer mp) {
+	private void dispatchPlayerStart(MediaPlayer mp) {
 		mp.start();
 		mHandler.post(mProgressUpdater);
 	}
@@ -122,13 +146,7 @@ public class AudioPlayerService extends Service implements
 
 	@Override
 	public void onCompletion(MediaPlayer mp) {
-		mHandler.removeCallbacks(mProgressUpdater);
-
-		final AudioPlayer audioPlayer = mAudioPlayers.get(mPlayingId);
-		if(audioPlayer != null) {
-			final SeekBar seekBar = audioPlayer.getSeekBar();
-			seekBar.setProgress(seekBar.getMax()); // This will indirectly call updateProgressInfo().
-		}
+		stopPlay(mPlayingId, mp.getDuration(), mp.getDuration());
 	}
 
 	protected void adjustSeekBarProgressToDuration(SeekBar seekBar, int duration) {
@@ -151,13 +169,13 @@ public class AudioPlayerService extends Service implements
 		return progressInfo;
 	}
 
-	protected ProgressInfo updateProgressInfo(long id, SeekBar seekBar) {
+	protected void updateProgressInfo(long id, SeekBar seekBar) {
+		updateProgressInfo(id, seekBar.getMax(), seekBar.getProgress());
+	}
+	protected void updateProgressInfo(long id, int max, int progress) {
 		final ProgressInfo progressInfo = getProgressInfo(id);
-
-		progressInfo.setMax(seekBar.getMax());
-		progressInfo.setProgress(seekBar.getProgress());
-
-		return progressInfo;
+		progressInfo.setMax(max);
+		progressInfo.setProgress(progress);
 	}
 
 	protected void resumeProgress(AudioPlayer audioPlayer, long id) {
@@ -170,15 +188,29 @@ public class AudioPlayerService extends Service implements
 	protected void addAudioPlayer(final AudioPlayer audioPlayer, final long id, final String fileName) {
 		mAudioPlayers.put(id, audioPlayer);
 
+		// Whether or now the audio player is playing right now.
+		final boolean isPlaying = mPlayingId != null && mPlayingId == id && mPlayer != null && mPlayer.isPlaying();
+
+		if(isPlaying) {
+			// If the player is playing, update progress before resuming.
+			updateProgressInfo(id, mPlayer.getDuration(), mPlayer.getCurrentPosition());
+		}
+
 		resumeProgress(audioPlayer, id);
 
-		final Button button = audioPlayer.getButton();
-		button.setOnClickListener(new View.OnClickListener() {
+		final PlayPauseImageButton button = audioPlayer.getButton();
+		button.setOnPlausePauseListener(new PlayPauseImageButton.OnPlayPauseListener() {
 			@Override
-			public void onClick(View v) {
+			public void onPlay(View v) {
 				startPlay(id, fileName);
 			}
+
+			@Override
+			public void onPause(View v) {
+				pausePlay(id);
+			}
 		});
+		button.setPlayPause(isPlaying);
 
 		final SeekBar seekBar = audioPlayer.getSeekBar();
 		seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -195,8 +227,10 @@ public class AudioPlayerService extends Service implements
 
 			@Override
 			public void onStopTrackingTouch(SeekBar seekBar) {
-				if(mPlayingId != null && mPlayingId == id)
+				if(mPlayingId != null && mPlayingId == id) {
 					mPlayer.seekTo(seekBar.getProgress());
+					mHandler.post(mProgressUpdater);
+				}
 			}
 		});
 
@@ -207,7 +241,8 @@ public class AudioPlayerService extends Service implements
 			}
 		});
 
-		if(mPlayingId != null && mPlayingId == id)
+		// Finally, if the player is playing, resume the progress updater.
+		if(isPlaying)
 			mHandler.post(mProgressUpdater);
 	}
 
