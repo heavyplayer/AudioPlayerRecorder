@@ -61,102 +61,119 @@ public class AudioPlayerService extends Service implements
 
 	protected void startPlay(long id, String fileName) {
 		if(mPlayingId == null || mPlayingId != id) {
-			if(mPlayingId != null && mPlayer != null && mPlayer.isPlaying()) {
-				// Before changing players, stop the previous player if it is playing.
-				stopPlay(mPlayingId, mPlayer.getDuration(), mPlayer.getCurrentPosition());
-			}
-
-			mPlayingId = id;
-
-			if (mPlayer == null) {
+			if(mPlayer == null) {
 				mPlayer = new MediaPlayer();
+				mPlayer.setOnPreparedListener(this);
 				mPlayer.setOnBufferingUpdateListener(this);
 				mPlayer.setOnCompletionListener(this);
-				mPlayer.setOnPreparedListener(this);
-			} else {
+			}
+			else {
 				mHandler.removeCallbacks(mProgressUpdater);
+
+				if(mPlayingId != null && mPlayer.isPlaying()) {
+					// Before changing player source, stop the previous player if it is playing.
+					final ProgressInfo progressInfo = getProgressInfo(mPlayingId);
+					progressInfo.setProgress(mPlayer.getCurrentPosition());
+
+					final AudioPlayer audioPlayer = mAudioPlayers.get(mPlayingId);
+					if(audioPlayer != null) {
+						final PlayPauseImageButton button = audioPlayer.getButton();
+						button.setPlayPause(false);
+					}
+				}
+
 				mPlayer.reset();
 			}
 
 			try {
-				mPlayer.setDataSource(generateInputFilePath(fileName));
-				mPlayer.prepare();
+				mPlayingId = id;
+				mPlayer.setDataSource(generateFilePath(fileName));
+				mPlayer.prepareAsync();
 			} catch (IOException | IllegalStateException e) {
 				Log.w(TAG, e);
 			}
 		}
 		else {
-			dispatchPlayerStart(mPlayer);
+			mPlayer.start();
+
+			final AudioPlayer audioPlayer = mAudioPlayers.get(id);
+			if(audioPlayer != null)
+				mHandler.post(mProgressUpdater);
 		}
+	}
+
+	protected String generateFilePath(String fileName) {
+		return Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + fileName;
 	}
 
 	protected void pausePlay(long id) {
-		if(mPlayingId == id)
+		if(mPlayingId == id) {
+			// Minor hack to fix a bug where after an 'internal/external state mismatch corrected'
+			// error it was no longer possible to pause the player.
+			mPlayer.start();
+
+			// Pause the player.
 			mPlayer.pause();
-	}
-
-	protected void stopPlay(long id, int max, int progress) {
-		final AudioPlayer audioPlayer = mAudioPlayers.get(id);
-		if(audioPlayer != null) {
-			final PlayPauseImageButton button = audioPlayer.getButton();
-			button.setPlayPause(false);
-
-			final SeekBar seekBar = audioPlayer.getSeekBar();
-			seekBar.setMax(max);
-			seekBar.setProgress(progress); // This will indirectly call updateProgressInfo().
 		}
-		else {
-			updateProgressInfo(id, max, progress);
-		}
-	}
-
-	protected String generateInputFilePath(String fileName) {
-		return Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + fileName;
 	}
 
 	@Override
 	public void onPrepared(MediaPlayer mp) {
 		final Long id = mPlayingId;
 		if(id != null) {
+			mp.start();
+
+			final ProgressInfo progressInfo = getProgressInfo(id);
+			final int duration = mp.getDuration();
+
+			// Adjust current progress with the definitive duration.
+			final boolean progressAdjusted = adjustProgressInfo(progressInfo, duration);
+
+			final int progress = progressInfo.getProgress();
+
 			final AudioPlayer audioPlayer = mAudioPlayers.get(id);
-			if (audioPlayer != null) {
-				final SeekBar seekBar = audioPlayer.getSeekBar();
-				adjustSeekBarProgressToDuration(seekBar, mp.getDuration());
+			if(audioPlayer != null) {
+				if(progressAdjusted) {
+					final SeekBar seekBar = audioPlayer.getSeekBar();
+					seekBar.setMax(duration);
+					seekBar.setProgress(progress);
+				}
 
-				dispatchPlayerStart(mp);
+				final PlayPauseImageButton button = audioPlayer.getButton();
+				button.setPlayPause(true);
 
+				mHandler.post(mProgressUpdater);
+			}
+
+
+			if(progress > 0 && progress < duration) {
 				// Resume progress.
-				final ProgressInfo progressInfo = getProgressInfo(id);
-				final int progress = progressInfo.getProgress();
-				if(progress > 0 && progress < mp.getDuration())
-					mp.seekTo(seekBar.getProgress());
+				mp.seekTo(progress);
 			}
 		}
 	}
 
-	private void dispatchPlayerStart(MediaPlayer mp) {
-		mp.start();
-		mHandler.post(mProgressUpdater);
-	}
-
 	@Override
 	public void onBufferingUpdate(MediaPlayer mp, int percent) {
-		mHandler.post(mProgressUpdater);
+		final AudioPlayer audioPlayer = mAudioPlayers.get(mPlayingId);
+		if(audioPlayer != null)
+			mHandler.post(mProgressUpdater);
 	}
 
 	@Override
 	public void onCompletion(MediaPlayer mp) {
-		stopPlay(mPlayingId, mp.getDuration(), mp.getDuration());
-	}
+		final int duration = mp.getDuration();
 
-	protected void adjustSeekBarProgressToDuration(SeekBar seekBar, int duration) {
-		if(seekBar.getMax() != duration) {
-			final float percent = seekBar.getProgress() / (float)seekBar.getMax();
-			final int progress = (int)(percent * duration);
+		final ProgressInfo progressInfo = getProgressInfo(mPlayingId);
+		progressInfo.setProgress(duration);
 
-			// Update SeekBar.
-			seekBar.setMax(duration);
-			seekBar.setProgress(progress); // This will indirectly call updateProgressInfo().
+		final AudioPlayer audioPlayer = mAudioPlayers.get(mPlayingId);
+		if(audioPlayer != null) {
+			final SeekBar seekBar = audioPlayer.getSeekBar();
+			seekBar.setProgress(duration);
+
+			final PlayPauseImageButton button = audioPlayer.getButton();
+			button.setPlayPause(false);
 		}
 	}
 
@@ -169,20 +186,20 @@ public class AudioPlayerService extends Service implements
 		return progressInfo;
 	}
 
-	protected void updateProgressInfo(long id, SeekBar seekBar) {
-		updateProgressInfo(id, seekBar.getMax(), seekBar.getProgress());
-	}
-	protected void updateProgressInfo(long id, int max, int progress) {
-		final ProgressInfo progressInfo = getProgressInfo(id);
-		progressInfo.setMax(max);
-		progressInfo.setProgress(progress);
-	}
+	protected boolean adjustProgressInfo(ProgressInfo progressInfo, int duration) {
+		final int max = progressInfo.getMax();
+		final int progress = progressInfo.getProgress();
 
-	protected void resumeProgress(AudioPlayer audioPlayer, long id) {
-		final ProgressInfo progressInfo = getProgressInfo(id);
-		final SeekBar seekBar = audioPlayer.getSeekBar();
-		seekBar.setMax(progressInfo.getMax());
-		seekBar.setProgress(progressInfo.getProgress());
+		if(max != duration) {
+			// Update progress info.
+			progressInfo.setMax(duration);
+			final float percent = progress / (float)max;
+			progressInfo.setProgress((int)(percent * duration));
+
+			return true;
+		}
+
+		return false;
 	}
 
 	protected void addAudioPlayer(final AudioPlayer audioPlayer, final long id, final String fileName) {
@@ -191,12 +208,12 @@ public class AudioPlayerService extends Service implements
 		// Whether or now the audio player is playing right now.
 		final boolean isPlaying = mPlayingId != null && mPlayingId == id && mPlayer != null && mPlayer.isPlaying();
 
+		final ProgressInfo progressInfo = getProgressInfo(id);
 		if(isPlaying) {
-			// If the player is playing, update progress before resuming.
-			updateProgressInfo(id, mPlayer.getDuration(), mPlayer.getCurrentPosition());
+			// If the player is playing, update progress before updating seek bar.
+			progressInfo.setMax(mPlayer.getDuration());
+			progressInfo.setProgress(mPlayer.getCurrentPosition());
 		}
-
-		resumeProgress(audioPlayer, id);
 
 		final PlayPauseImageButton button = audioPlayer.getButton();
 		button.setOnPlausePauseListener(new PlayPauseImageButton.OnPlayPauseListener() {
@@ -213,10 +230,15 @@ public class AudioPlayerService extends Service implements
 		button.setPlayPause(isPlaying);
 
 		final SeekBar seekBar = audioPlayer.getSeekBar();
+		seekBar.setMax(progressInfo.getMax());
+		seekBar.setProgress(progressInfo.getProgress());
 		seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-				updateProgressInfo(id, seekBar);
+				if(fromUser) {
+					final ProgressInfo progressInfo = getProgressInfo(id);
+					progressInfo.setProgress(progress);
+				}
 			}
 
 			@Override
@@ -283,10 +305,15 @@ public class AudioPlayerService extends Service implements
 		@Override
 		public void run() {
 			if(mPlayer != null && mPlayer.isPlaying() && mPlayingId != null) {
+				final ProgressInfo progressInfo = getProgressInfo(mPlayingId);
+				progressInfo.setProgress(mPlayer.getCurrentPosition());
+
 				final AudioPlayer audioPlayer = mAudioPlayers.get(mPlayingId);
 				if(audioPlayer != null) {
 					final SeekBar seekBar = audioPlayer.getSeekBar();
-					seekBar.setProgress(mPlayer.getCurrentPosition()); // This will indirectly call updateProgressInfo().
+					seekBar.setProgress(mPlayer.getCurrentPosition());
+
+					// If there is an active audio player, keep updating it.
 					mHandler.postDelayed(this, UPDATE_INTERVAL_MS);
 				}
 			}
