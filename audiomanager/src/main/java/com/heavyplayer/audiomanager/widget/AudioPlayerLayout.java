@@ -12,23 +12,23 @@ import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import com.heavyplayer.audiomanager.R;
 
-public class AudioPlayer extends LinearLayout {
+public class AudioPlayerLayout extends LinearLayout {
 	public OnDetachListener mOnDetachListener;
 
 	private PlayPauseImageButton mButton;
 	private SeekBar mSeekBar;
 
-	public AudioPlayer(Context context) {
+	public AudioPlayerLayout(Context context) {
 		super(context);
 		init(context, null);
 	}
 
-	public AudioPlayer(Context context, AttributeSet attrs) {
+	public AudioPlayerLayout(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		init(context, attrs);
 	}
 
-	public AudioPlayer(Context context, AttributeSet attrs, int defStyle) {
+	public AudioPlayerLayout(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		init(context, attrs);
 	}
@@ -40,11 +40,11 @@ public class AudioPlayer extends LinearLayout {
 		int playResId = 0;
 		int pauseResId = 0;
 		if(attrs != null) {
-			final TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.AudioPlayer);
+			final TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.AudioPlayerLayout);
 			if(ta != null) {
 				try {
-					playResId = ta.getResourceId(R.styleable.AudioPlayer_playSrc, 0);
-					pauseResId = ta.getResourceId(R.styleable.AudioPlayer_pauseSrc, 0);
+					playResId = ta.getResourceId(R.styleable.AudioPlayerLayout_playSrc, 0);
+					pauseResId = ta.getResourceId(R.styleable.AudioPlayerLayout_pauseSrc, 0);
 				} finally {
 					ta.recycle();
 				}

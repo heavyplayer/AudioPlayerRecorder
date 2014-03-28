@@ -13,7 +13,7 @@ import android.widget.Toast;
 import com.heavyplayer.audiomanager.R;
 import com.heavyplayer.audiomanager.obj.Item;
 import com.heavyplayer.audiomanager.service.AudioPlayerService;
-import com.heavyplayer.audiomanager.widget.AudioPlayer;
+import com.heavyplayer.audiomanager.widget.AudioPlayerLayout;
 
 public class PlayerActivity extends RecorderActivity {
 	private AudioPlayerService.LocalBinder mAudioPlayerBinder;
@@ -110,10 +110,11 @@ public class PlayerActivity extends RecorderActivity {
 			final View view = super.getView(position, convertView, parent);
 
 			if(mAudioPlayerBinder != null) {
-				final AudioPlayer audioPlayer = (AudioPlayer)view.findViewById(R.id.item_audio_player);
-				if(audioPlayer != null) {
+				final AudioPlayerLayout audioPlayerLayout =
+						(AudioPlayerLayout)view.findViewById(R.id.item_audio_player);
+				if(audioPlayerLayout != null) {
 					final Item item = getItem(position);
-					mAudioPlayerBinder.registerAudioPlayer(audioPlayer, item.getId(), item.getFileName());
+					mAudioPlayerBinder.register(item.getId(), item.getFileName(), audioPlayerLayout);
 				}
 			}
 

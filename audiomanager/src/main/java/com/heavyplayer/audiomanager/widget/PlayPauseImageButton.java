@@ -12,6 +12,8 @@ import com.heavyplayer.audiomanager.R;
 
 public class PlayPauseImageButton extends ImageButton implements View.OnClickListener {
 	private boolean mIsPlaying;
+	private boolean mAutoChangeState;
+
 	private int mPlayResId;
 	private int mPauseResId;
 
@@ -38,6 +40,8 @@ public class PlayPauseImageButton extends ImageButton implements View.OnClickLis
 
 	private void init(Context context, AttributeSet attrs) {
 		mIsPlaying = false;
+		mAutoChangeState = true;
+
 		mPlayResId = R.drawable.ic_av_play;
 		mPauseResId = R.drawable.ic_av_pause;
 
@@ -70,26 +74,24 @@ public class PlayPauseImageButton extends ImageButton implements View.OnClickLis
 		updateDrawable();
 	}
 
-	public void setPlayPause(boolean isPlaying) {
+	public void setIsPlaying(boolean isPlaying) {
 		mIsPlaying = isPlaying;
 		updateDrawable();
 	}
 
 	@Override
 	public void onClick(View v) {
-		mIsPlaying = !mIsPlaying;
-
 		if(mOnClickListener != null)
 			mOnClickListener.onClick(v);
 
 		if(mOnPlayPauseListener != null) {
-			if (mIsPlaying)
-				mOnPlayPauseListener.onPlay(this);
-			else
+			if(mIsPlaying)
 				mOnPlayPauseListener.onPause(this);
+			else
+				mOnPlayPauseListener.onPlay(this);
 		}
 
-		// Finally, update drawable to translate the state update.
+		mIsPlaying = !mIsPlaying;
 		updateDrawable();
 	}
 
@@ -116,7 +118,7 @@ public class PlayPauseImageButton extends ImageButton implements View.OnClickLis
 		mOnClickListener = l;
 	}
 
-	public void setOnPlausePauseListener(OnPlayPauseListener l) {
+	public void setOnPlayPauseListener(OnPlayPauseListener l) {
 		mOnPlayPauseListener = l;
 	}
 
