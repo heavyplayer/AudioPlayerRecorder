@@ -1,1 +1,2 @@
-include ':audiomanager'
+include ':AudioPlayerRecorderSamples'
+include ':AudioPlayerRecorderLibrary'
