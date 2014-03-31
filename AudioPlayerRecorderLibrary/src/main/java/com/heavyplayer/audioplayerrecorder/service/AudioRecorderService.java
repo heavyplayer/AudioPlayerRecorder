@@ -58,32 +58,40 @@ public class AudioRecorderService extends Service {
 	}
 
 	protected void initMediaRecorder(Uri fileUri) {
-		mRecorder = new MediaRecorder();
-		mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-		mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-		mRecorder.setOutputFile(fileUri.getPath());
-		mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-
 		try {
+			mRecorder = new MediaRecorder();
+			mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+			mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+			mRecorder.setOutputFile(fileUri.getPath());
+			mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+
 			mRecorder.prepare();
-		} catch (Exception e){
+
+			// Start recording.
+			mRecorder.start();
+			mHandler.post(mAmplitudeUpdater);
+		}
+		catch(Exception e){
 			Log.w(TAG, e);
 		}
-
-		// Start recording.
-		mRecorder.start();
-		mHandler.post(mAmplitudeUpdater);
 	}
 
 	@Override
 	public void onDestroy() {
+		if(mRecorder != null) {
+			try {
+				mRecorder.stop();
+				mRecorder.reset();
+				mRecorder.release();
+				mRecorder = null;
+			}
+			catch(Exception e) {
+				Log.w(TAG, e);
+			}
+		}
+
 		// Tell the user we stopped.
 		Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
-
-		mRecorder.stop();
-		mRecorder.reset();
-		mRecorder.release();
-		mRecorder = null;
 	}
 
 	@Override

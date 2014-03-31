@@ -27,6 +27,20 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 	private AudioRecorderService.LocalBinder mAudioRecorderBinder;
 	private ServiceConnection mServiceConnection = new AudioRecorderServiceConnection();
 
+	private Uri mFileUri;
+
+	public static AudioRecorderFragment newInstance(Uri fileUri) {
+		return newInstance(new AudioRecorderFragment(), fileUri);
+	}
+	protected static <T extends AudioRecorderFragment> T newInstance(T fragment, Uri fileUri) {
+		final Bundle args = new Bundle();
+		args.putParcelable(ARG_FILE_URI, fileUri);
+
+		fragment.setArguments(args);
+
+		return fragment;
+	}
+
 	public static AudioRecorderFragment createInstance(Uri fileUri) {
 		final Bundle args = new Bundle();
 		args.putParcelable(ARG_FILE_URI, fileUri);
@@ -82,8 +96,7 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 
 	protected void startService() {
 		final Activity activity = getActivity();
-		final Uri fileUri = getArguments().getParcelable(ARG_FILE_URI);
-		activity.startService(AudioRecorderService.getLaunchIntent(activity, fileUri));
+		activity.startService(AudioRecorderService.getLaunchIntent(activity, getFileUri()));
 	}
 
 	protected void bindService() {
@@ -110,6 +123,7 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 	protected void unbindServiceAndStop() {
 		unbindService();
 		getActivity().stopService(new Intent(getActivity(), AudioRecorderService.class));
+		onStopRecording();
 	}
 
 	protected void registerMicrophone() {
@@ -124,6 +138,16 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 				(AudioRecorderMicrophone)getDialog().findViewById(android.R.id.input);
 		if(mAudioRecorderBinder != null && microphone != null)
 			mAudioRecorderBinder.unregisterAudioRecorderMicrophone(microphone);
+	}
+
+	public void onStopRecording() {
+		// Purposely empty.
+	}
+
+	public Uri getFileUri() {
+		if(mFileUri == null)
+			mFileUri = getArguments().getParcelable(ARG_FILE_URI);
+		return mFileUri;
 	}
 
 	private class AudioRecorderServiceConnection implements ServiceConnection {
@@ -150,6 +174,9 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 			// Because it is running in our same process, we should never
 			// see this happen.
 			mAudioRecorderBinder = null;
+
+			onStopRecording();
+			dismiss();
 
 			Toast.makeText(getActivity(), R.string.local_service_disconnected, Toast.LENGTH_SHORT).show();
 		}
