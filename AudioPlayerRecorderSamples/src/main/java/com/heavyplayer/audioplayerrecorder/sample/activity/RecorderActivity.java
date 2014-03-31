@@ -1,7 +1,9 @@
 package com.heavyplayer.audioplayerrecorder.sample.activity;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,6 +16,8 @@ import android.widget.TextView;
 import com.heavyplayer.audioplayerrecorder.fragment.AudioRecorderFragment;
 import com.heavyplayer.audioplayerrecorder.sample.R;
 import com.heavyplayer.audioplayerrecorder.sample.obj.Item;
+
+import java.io.File;
 
 public class RecorderActivity extends ActionBarActivity implements AdapterView.OnItemClickListener {
 	private static Item[] sItems = {
@@ -83,8 +87,13 @@ public class RecorderActivity extends ActionBarActivity implements AdapterView.O
 	public void onRecord(View v) {
 		final String fileName = getSelectedItem().getFileName();
 		if(fileName != null)
-			AudioRecorderFragment.createInstance(fileName)
+			AudioRecorderFragment.createInstance(generateExternalStorageFileUri(fileName))
 					.show(getSupportFragmentManager(), AudioRecorderFragment.TAG);
+	}
+
+	protected Uri generateExternalStorageFileUri(String fileName) {
+		final File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath(), fileName);
+		return Uri.fromFile(file);
 	}
 
 	protected Item getSelectedItem() {

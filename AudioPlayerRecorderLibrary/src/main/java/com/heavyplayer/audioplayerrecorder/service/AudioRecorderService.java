@@ -4,8 +4,8 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Binder;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -21,7 +21,7 @@ public class AudioRecorderService extends Service {
 
 	private final static int UPDATE_INTERVAL_MS = 100;
 
-	public static final String EXTRA_FILE_NAME = "extra_file_name";
+	public static final String EXTRA_FILE_URI = "extra_file_uri";
 
 	// This is the object that receives interactions from clients.  See
 	// RemoteService for a more complete example.
@@ -34,9 +34,9 @@ public class AudioRecorderService extends Service {
 
 	private MediaRecorder mRecorder;
 
-	public static Intent getLaunchIntent(Context context, String fileName) {
+	public static Intent getLaunchIntent(Context context, Uri fileUri) {
 		final Intent intent = new Intent(context, AudioRecorderService.class);
-		intent.putExtra(EXTRA_FILE_NAME, fileName);
+		intent.putExtra(EXTRA_FILE_URI, fileUri);
 		return intent;
 	}
 
@@ -51,17 +51,17 @@ public class AudioRecorderService extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		if(mRecorder == null)
-			initMediaRecorder(intent.getStringExtra(EXTRA_FILE_NAME));
+			initMediaRecorder((Uri)intent.getParcelableExtra(EXTRA_FILE_URI));
 
 		// We want this service to continue running until it is explicitly stopped, so return sticky.
 		return START_STICKY;
 	}
 
-	protected void initMediaRecorder(String fileName) {
+	protected void initMediaRecorder(Uri fileUri) {
 		mRecorder = new MediaRecorder();
 		mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
 		mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-		mRecorder.setOutputFile(generateOutputFilePath(fileName));
+		mRecorder.setOutputFile(fileUri.getPath());
 		mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
 
 		try {
@@ -73,10 +73,6 @@ public class AudioRecorderService extends Service {
 		// Start recording.
 		mRecorder.start();
 		mHandler.post(mAmplitudeUpdater);
-	}
-
-	protected String generateOutputFilePath(String fileName) {
-		return Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + fileName;
 	}
 
 	@Override

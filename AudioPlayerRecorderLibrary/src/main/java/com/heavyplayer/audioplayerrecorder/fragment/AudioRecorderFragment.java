@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.DialogFragment;
@@ -21,14 +22,14 @@ import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
 public class AudioRecorderFragment extends DialogFragment implements DialogInterface.OnClickListener {
 	public static final String TAG = AudioRecorderFragment.class.getSimpleName();
 
-	private static final String ARG_FILE_NAME = "arg_file_name";
+	private static final String ARG_FILE_URI = "arg_file_uri";
 
 	private AudioRecorderService.LocalBinder mAudioRecorderBinder;
 	private ServiceConnection mServiceConnection = new AudioRecorderServiceConnection();
 
-	public static AudioRecorderFragment createInstance(String fileName) {
+	public static AudioRecorderFragment createInstance(Uri fileUri) {
 		final Bundle args = new Bundle();
-		args.putString(ARG_FILE_NAME, fileName);
+		args.putParcelable(ARG_FILE_URI, fileUri);
 
 		final AudioRecorderFragment fragment = new AudioRecorderFragment();
 		fragment.setArguments(args);
@@ -81,8 +82,8 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 
 	protected void startService() {
 		final Activity activity = getActivity();
-		final String fileName = getArguments().getString(ARG_FILE_NAME);
-		activity.startService(AudioRecorderService.getLaunchIntent(activity, fileName));
+		final Uri fileUri = getArguments().getParcelable(ARG_FILE_URI);
+		activity.startService(AudioRecorderService.getLaunchIntent(activity, fileUri));
 	}
 
 	protected void bindService() {
