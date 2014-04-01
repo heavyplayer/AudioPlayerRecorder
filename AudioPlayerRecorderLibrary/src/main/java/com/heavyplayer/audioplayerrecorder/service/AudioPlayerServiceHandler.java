@@ -29,6 +29,7 @@ public class AudioPlayerServiceHandler {
 	public <T extends AudioPlayerService> AudioPlayerServiceHandler(Activity activity, Class<T> serviceClass) {
 		mActivity = activity;
 		mServiceClass = serviceClass;
+		mIsPortrait = isPortrait();
 		mActivity.startService(new Intent(mActivity, mServiceClass));
 	}
 
