@@ -41,7 +41,7 @@ public class AudioPlayerService extends Service {
 		Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
 
 		for(AudioPlayerHandler player : mPlayers.values())
-			player.onDestroy();
+			player.destroy();
 	}
 
 	@Override

@@ -55,7 +55,7 @@ public class AudioPlayerHandler implements
 
 		if(!mMediaPlayer.isPrepared()) {
 			try {
-				mMediaPlayer.setDataSource(mFileUri.getPath());
+				mMediaPlayer.setDataSource(mFileUri.toString());
 				mMediaPlayer.prepare();
 			} catch (IOException e) {
 				Log.w(TAG, e);
@@ -197,7 +197,7 @@ public class AudioPlayerHandler implements
 		mSeekBar = null;
 	}
 
-	public void onDestroy() {
+	public void destroy() {
 		destroyMediaPlayer();
 		abandonAudioFocus();
 	}
@@ -255,7 +255,7 @@ public class AudioPlayerHandler implements
 	protected class ProgressUpdater implements Runnable {
 		@Override
 		public void run() {
-			if(mSeekBar != null && mMediaPlayer.isPlaying()) {
+			if(mSeekBar != null && mMediaPlayer != null && mMediaPlayer.isPlaying()) {
 				mSeekBar.setProgress(mMediaPlayer.getCurrentPosition());
 				mHandler.postDelayed(this, PROGRESS_UPDATE_INTERVAL_MS);
 			}
