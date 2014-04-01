@@ -4,6 +4,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.Uri;
+import android.os.Environment;
 import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.view.View;
@@ -14,6 +16,8 @@ import com.heavyplayer.audioplayerrecorder.sample.R;
 import com.heavyplayer.audioplayerrecorder.sample.obj.Item;
 import com.heavyplayer.audioplayerrecorder.service.AudioPlayerService;
 import com.heavyplayer.audioplayerrecorder.widget.AudioPlayerLayout;
+
+import java.io.File;
 
 public class PlayerActivity extends RecorderActivity {
 	private AudioPlayerService.LocalBinder mAudioPlayerBinder;
@@ -114,11 +118,19 @@ public class PlayerActivity extends RecorderActivity {
 						(AudioPlayerLayout)view.findViewById(R.id.item_audio_player);
 				if(audioPlayerLayout != null) {
 					final Item item = getItem(position);
-					mAudioPlayerBinder.register(item.getId(), item.getFileName(), audioPlayerLayout);
+					mAudioPlayerBinder.register(
+							item.getId(),
+							generateExternalStorageFileUri(item.getFileName()),
+							audioPlayerLayout);
 				}
 			}
 
 			return view;
 		}
+	}
+
+	protected Uri generateExternalStorageFileUri(String fileName) {
+		final File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath(), fileName);
+		return Uri.fromFile(file);
 	}
 }

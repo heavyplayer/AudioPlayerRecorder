@@ -3,7 +3,7 @@ package com.heavyplayer.audioplayerrecorder.util;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.os.Environment;
+import android.net.Uri;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
@@ -24,7 +24,7 @@ public class AudioPlayerHandler implements
 	private AudioManager mAudioManager;
 	private AudioFocusChangeListener mAudioFocusChangeListener;
 
-	private String mFilePath;
+	private Uri mFileUri;
 
 	private Handler mHandler;
 	private ProgressUpdater mProgressUpdater;
@@ -35,10 +35,10 @@ public class AudioPlayerHandler implements
 	private PlayPauseImageButton mButton;
 	private SeekBar mSeekBar;
 
-	public AudioPlayerHandler(Context context, String fileName, Handler handler) {
+	public AudioPlayerHandler(Context context, Uri fileUri, Handler handler) {
 		mAudioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
 
-		mFilePath = generateFilePath(fileName);
+		mFileUri = fileUri;
 
 		mMediaPlayer = new SafeMediaPlayer();
 		mMediaPlayer.setOnStartListener(this);
@@ -49,17 +49,13 @@ public class AudioPlayerHandler implements
 		mProgressUpdater = new ProgressUpdater();
 	}
 
-	protected String generateFilePath(String fileName) {
-		return Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + fileName;
-	}
-
 	protected void start(boolean gainAudioFocus, boolean updateButton) {
 		if(gainAudioFocus)
 			gainAudioFocus();
 
 		if(!mMediaPlayer.isPrepared()) {
 			try {
-				mMediaPlayer.setDataSource(mFilePath);
+				mMediaPlayer.setDataSource(mFileUri.getPath());
 				mMediaPlayer.prepare();
 			} catch (IOException e) {
 				Log.w(TAG, e);
