@@ -7,7 +7,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.widget.Toast;
 import com.heavyplayer.audioplayerrecorder.R;
-import com.heavyplayer.audioplayerrecorder.obj.Player;
+import com.heavyplayer.audioplayerrecorder.util.AudioPlayerHandler;
 import com.heavyplayer.audioplayerrecorder.widget.AudioPlayerLayout;
 
 import java.util.HashMap;
@@ -18,7 +18,7 @@ public class AudioPlayerService extends Service {
 
 	private Handler mHandler;
 
-	private Map<Long, Player> mPlayers = new HashMap<>(6);
+	private Map<Long, AudioPlayerHandler> mPlayers = new HashMap<>(6);
 
 	@Override
 	public void onCreate() {
@@ -39,7 +39,7 @@ public class AudioPlayerService extends Service {
 		// Tell the user we stopped.
 		Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
 
-		for(Player player : mPlayers.values())
+		for(AudioPlayerHandler player : mPlayers.values())
 			player.onDestroy();
 	}
 
@@ -50,9 +50,9 @@ public class AudioPlayerService extends Service {
 
 	public class LocalBinder extends Binder {
 		public void register(long id, String fileName, AudioPlayerLayout view) {
-			Player player = mPlayers.get(id);
+			AudioPlayerHandler player = mPlayers.get(id);
 			if(player == null) {
-				player = new Player(AudioPlayerService.this, fileName, mHandler);
+				player = new AudioPlayerHandler(AudioPlayerService.this, fileName, mHandler);
 				mPlayers.put(id, player);
 			}
 

@@ -1,4 +1,4 @@
-package com.heavyplayer.audioplayerrecorder.obj;
+package com.heavyplayer.audioplayerrecorder.util;
 
 import android.content.Context;
 import android.media.AudioManager;
@@ -12,11 +12,12 @@ import com.heavyplayer.audioplayerrecorder.widget.AudioPlayerLayout;
 import com.heavyplayer.audioplayerrecorder.widget.PlayPauseImageButton;
 
 import java.io.IOException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
-public class Player implements MediaPlayer.OnBufferingUpdateListener, MediaPlayer.OnCompletionListener {
-	public static final String TAG = Player.class.getSimpleName();
+public class AudioPlayerHandler implements
+		MediaPlayer.OnBufferingUpdateListener,
+		MediaPlayer.OnCompletionListener,
+		SafeMediaPlayer.OnStartListener {
+	public static final String TAG = AudioPlayerHandler.class.getSimpleName();
 
 	private final static long PROGRESS_UPDATE_INTERVAL_MS = 200;
 
@@ -28,164 +29,101 @@ public class Player implements MediaPlayer.OnBufferingUpdateListener, MediaPlaye
 	private Handler mHandler;
 	private ProgressUpdater mProgressUpdater;
 
-	private Executor mExecutor;
-
-	private MediaPlayer mMediaPlayer;
-
-	private int mMax;
-	private int mProgress;
-
-	private boolean mIsPrepared;
-	private boolean mIsPlaying;
+	private SafeMediaPlayer mMediaPlayer;
 
 	private AudioPlayerLayout mView;
 	private PlayPauseImageButton mButton;
 	private SeekBar mSeekBar;
 
-	public Player(Context context, String fileName, Handler handler) {
+	public AudioPlayerHandler(Context context, String fileName, Handler handler) {
 		mAudioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
 
 		mFilePath = generateFilePath(fileName);
 
+		mMediaPlayer = new SafeMediaPlayer();
+		mMediaPlayer.setOnStartListener(this);
+		mMediaPlayer.setOnCompletionListener(this);
+		mMediaPlayer.setOnBufferingUpdateListener(this);
+
 		mHandler = handler;
 		mProgressUpdater = new ProgressUpdater();
-
-		mExecutor = Executors.newSingleThreadExecutor();
-
-		mMax = 100;
-		mProgress = 0;
-
-		mIsPrepared = false;
-		mIsPlaying = false;
 	}
 
 	protected String generateFilePath(String fileName) {
 		return Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + fileName;
 	}
 
-	protected void start(boolean gainAudioFocus) {
+	protected void start(boolean gainAudioFocus, boolean updateButton) {
 		if(gainAudioFocus)
 			gainAudioFocus();
 
-		if(mMediaPlayer == null) {
-			mMediaPlayer = new MediaPlayer();
-			mMediaPlayer.setOnBufferingUpdateListener(this);
-			mMediaPlayer.setOnCompletionListener(this);
+		if(!mMediaPlayer.isPrepared()) {
 			try {
 				mMediaPlayer.setDataSource(mFilePath);
 				mMediaPlayer.prepare();
-			}
-			catch (IOException e) {
+			} catch (IOException e) {
 				Log.w(TAG, e);
-				return;
 			}
-
-			adjustWithCurrentProgress();
 		}
 
-		mIsPrepared = true;
 		mMediaPlayer.start();
 
-		// Start updater.
+		if(updateButton)
+			updateButton(true);
+	}
+
+	protected void pause(boolean abandonAudioFocus, boolean updateButton) {
+		mMediaPlayer.pause();
+
+		if(updateButton)
+			updateButton(false);
+
+		if(abandonAudioFocus)
+			abandonAudioFocus();
+
+	}
+
+	protected void seekTo(int msec) {
+		mMediaPlayer.seekTo(msec);
+	}
+
+	protected void updateButton(boolean isPlaying) {
+		if(mButton != null)
+			mButton.setIsPlaying(isPlaying);
+	}
+
+	@Override
+	public void onBufferingUpdate(MediaPlayer mp, int percent) {
+		Log.i(TAG, "buffering percent: " + percent);
+	}
+
+	@Override
+	public void onStart(MediaPlayer mp) {
+		if(mSeekBar != null) {
+			if(mSeekBar.getMax() != mp.getDuration()) {
+				mSeekBar.setMax(mp.getDuration());
+				mSeekBar.setProgress(mp.getCurrentPosition());
+			}
+			else if(mSeekBar.getProgress() != mp.getCurrentPosition()) {
+				mSeekBar.setProgress(mp.getCurrentPosition());
+			}
+		}
+
+		// Update seek bar.
 		startSeekBarUpdate();
 	}
 
-	protected void adjustWithCurrentProgress() {
-		final int duration = mMediaPlayer.getDuration();
-
-		if(mMax != duration) {
-			mProgress = (int)((mProgress / (float)mMax) * duration);
-			mMax = duration;
-
-			// Adjust seek bar scale.
-			if(mSeekBar != null) {
-				mSeekBar.setMax(mMax);
-				mSeekBar.setProgress(mProgress);
-			}
-		}
-
-		if(mProgress > 0 && mProgress < duration)
-			dispatchSeekTo(mProgress);
-	}
-
-	protected void startSeekBarUpdate() {
+	public void startSeekBarUpdate() {
 		// Update seek bar.
 		mHandler.removeCallbacks(mProgressUpdater);
 		mHandler.post(mProgressUpdater);
 	}
 
-	protected void dispatchStart(final boolean gainAudioFocus, final boolean updateButton) {
-		mExecutor.execute(new Runnable() {
-			@Override
-			public void run() {
-				start(gainAudioFocus);
-				dispatchUpdateButton(updateButton, true);
-			}
-		});
-	}
-
-	protected void pause(boolean abandonAudioFocus) {
-		// Minor hack to fix a bug where after an 'internal/external state mismatch corrected'
-		// error it was no longer possible to pause the player.
-		mMediaPlayer.start();
-
-		mMediaPlayer.pause();
-
-		if(abandonAudioFocus)
-			abandonAudioFocus();
-	}
-
-	protected void dispatchPause(final boolean abandonAudioFocus, final boolean updateButton) {
-		mExecutor.execute(new Runnable() {
-			@Override
-			public void run() {
-				pause(abandonAudioFocus);
-				dispatchUpdateButton(updateButton, false);
-			}
-		});
-	}
-
-	protected void seekTo(int msec) {
-		if(mMediaPlayer != null)
-			mMediaPlayer.seekTo(msec);
-	}
-
-	protected void dispatchSeekTo(final int msec) {
-		mExecutor.execute(new Runnable() {
-			@Override
-			public void run() {
-				seekTo(msec);
-			}
-		});
-	}
-
-	protected void updateButton(boolean isPlaying) {
-		mIsPlaying = isPlaying;
-		if(mButton != null)
-			mButton.setIsPlaying(isPlaying);
-	}
-
-	protected void dispatchUpdateButton(boolean updateButton, final boolean isPlaying) {
-		if(updateButton) {
-			mHandler.post(new Runnable() {
-				@Override
-				public void run() {
-					updateButton(isPlaying);
-				}
-			});
-		}
-	}
-
-	@Override
-	public void onBufferingUpdate(MediaPlayer mp, int percent) {
-		Log.i(TAG, "buffering percent: "+percent);
-	}
-
 	@Override
 	public void onCompletion(MediaPlayer mp) {
-		mProgress = mp.getDuration();
-		mMax = mp.getDuration();
-		mIsPrepared = false;
+		// Updates seek bar.
+		if(mSeekBar != null)
+			mSeekBar.setProgress(mp.getDuration());
 
 		updateButton(false);
 
@@ -215,19 +153,17 @@ public class Player implements MediaPlayer.OnBufferingUpdateListener, MediaPlaye
 		mButton.setOnPlayPauseListener(new PlayPauseImageButton.OnPlayPauseListener() {
 			@Override
 			public void onPlay(View v) {
-				mIsPlaying = true;
-				dispatchStart(true, false);
+				start(true, false);
 			}
 
 			@Override
 			public void onPause(View v) {
-				mIsPlaying = false;
-				dispatchPause(true, false);
+				pause(true, false);
 			}
 		});
 
 		// Resume button state.
-		mButton.setIsPlaying(mIsPlaying);
+		mButton.setIsPlaying(mMediaPlayer.isGoingToPlay());
 	}
 
 	protected void registerSeekBar(SeekBar seekBar) {
@@ -235,36 +171,23 @@ public class Player implements MediaPlayer.OnBufferingUpdateListener, MediaPlaye
 
 		mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 			@Override
-			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-				if(fromUser) {
-					if(mIsPrepared)
-						dispatchSeekTo(progress);
-					else
-						mProgress = progress;
-				}
-			}
-
-			@Override
 			public void onStartTrackingTouch(SeekBar seekBar) {
 				mHandler.removeCallbacks(mProgressUpdater);
 			}
 
 			@Override
 			public void onStopTrackingTouch(SeekBar seekBar) {
+				seekTo(seekBar.getProgress());
 				mHandler.post(mProgressUpdater);
-				dispatchSeekTo(seekBar.getProgress());
 			}
+
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) { /* Do nothing */ }
 		});
 
 		// Resume progress.
-		if(mIsPrepared) {
-			mSeekBar.setMax(mMediaPlayer.getDuration());
-			mSeekBar.setProgress(mMediaPlayer.getCurrentPosition());
-		}
-		else {
-			mSeekBar.setMax(mMax);
-			mSeekBar.setProgress(mProgress);
-		}
+		mSeekBar.setMax(mMediaPlayer.getDuration());
+		mSeekBar.setProgress(mMediaPlayer.getCurrentPosition());
 	}
 
 	protected void clearView() {
@@ -279,13 +202,22 @@ public class Player implements MediaPlayer.OnBufferingUpdateListener, MediaPlaye
 	}
 
 	public void onDestroy() {
+		destroyMediaPlayer();
 		abandonAudioFocus();
+	}
 
-		if(mMediaPlayer != null) {
+	protected void destroyMediaPlayer() {
+		try {
+			mMediaPlayer.setOnBufferingUpdateListener(null);
+			mMediaPlayer.setOnCompletionListener(null);
+			mMediaPlayer.setOnStartListener(null);
 			mMediaPlayer.stop();
 			mMediaPlayer.reset();
 			mMediaPlayer.release();
 			mMediaPlayer = null;
+		}
+		catch(Exception e) {
+			Log.w(TAG, e);
 		}
 	}
 
@@ -311,14 +243,14 @@ public class Player implements MediaPlayer.OnBufferingUpdateListener, MediaPlaye
 		public void onAudioFocusChange(int focusChange) {
 			switch(focusChange) {
 				case AudioManager.AUDIOFOCUS_LOSS:
-					dispatchPause(true, true);
+					pause(true, true);
 					break;
 				case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
 				case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-					dispatchPause(false, true);
+					pause(false, true);
 					break;
 				case AudioManager.AUDIOFOCUS_GAIN:
-					dispatchStart(false, true);
+					start(false, true);
 					break;
 			}
 		}
@@ -327,7 +259,7 @@ public class Player implements MediaPlayer.OnBufferingUpdateListener, MediaPlaye
 	protected class ProgressUpdater implements Runnable {
 		@Override
 		public void run() {
-			if(mSeekBar != null && mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+			if(mSeekBar != null && mMediaPlayer.isPlaying()) {
 				mSeekBar.setProgress(mMediaPlayer.getCurrentPosition());
 				mHandler.postDelayed(this, PROGRESS_UPDATE_INTERVAL_MS);
 			}
