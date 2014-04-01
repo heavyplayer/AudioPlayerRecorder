@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AudioPlayerService extends Service {
-	private final IBinder mBinder = new LocalBinder();
+	private IBinder mBinder;
 
 	private Handler mHandler;
 
@@ -26,7 +26,13 @@ public class AudioPlayerService extends Service {
 		// Tell the user we started.
 		Toast.makeText(this, R.string.local_service_started, Toast.LENGTH_SHORT).show();
 
+		mBinder = onCreateLocalBinder();
+
 		mHandler = new Handler();
+	}
+
+	protected LocalBinder onCreateLocalBinder() {
+		return new LocalBinder();
 	}
 
 	@Override

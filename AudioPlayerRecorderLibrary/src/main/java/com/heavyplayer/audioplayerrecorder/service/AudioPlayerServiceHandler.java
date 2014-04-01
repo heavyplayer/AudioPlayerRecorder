@@ -16,19 +16,20 @@ public class AudioPlayerServiceHandler {
 	private AudioPlayerServiceConnection mServiceConnection = new AudioPlayerServiceConnection();
 
 	private Activity mActivity;
+	private Class<?> mServiceClass;
 
 	private boolean mIsPortrait;
 
 	private ListView mListView;
 
 	public AudioPlayerServiceHandler(Activity activity) {
-		mActivity = activity;
+		this(activity, AudioPlayerService.class);
 	}
 
-	public void onActivityStart() {
-		mIsPortrait = isPortrait();
-
-		mActivity.startService(new Intent(mActivity, AudioPlayerService.class));
+	public <T extends AudioPlayerService> AudioPlayerServiceHandler(Activity activity, Class<T> serviceClass) {
+		mActivity = activity;
+		mServiceClass = serviceClass;
+		mActivity.startService(new Intent(mActivity, mServiceClass));
 	}
 
 	public void onActivityResume() {
@@ -39,12 +40,20 @@ public class AudioPlayerServiceHandler {
 		unbindService();
 
 		if(mIsPortrait == isPortrait())
-			mActivity.stopService(new Intent(mActivity, AudioPlayerService.class));
+			mActivity.stopService(new Intent(mActivity, mServiceClass));
+	}
+
+	public void onFragmentResume() {
+		onActivityResume();
+	}
+
+	public void onFragmentPause() {
+		onActivityPause();
 	}
 
 	protected void bindService() {
 		mActivity.bindService(
-				new Intent(mActivity, AudioPlayerService.class),
+				new Intent(mActivity, mServiceClass),
 				mServiceConnection,
 				Context.BIND_AUTO_CREATE);
 	}

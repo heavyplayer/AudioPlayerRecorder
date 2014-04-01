@@ -30,12 +30,6 @@ public class PlayerActivity extends RecorderActivity {
 	}
 
 	@Override
-	protected void onStart() {
-		super.onStart();
-		mAudioPlayerServiceHandler.onActivityStart();
-	}
-
-	@Override
 	protected void onResume() {
 		super.onResume();
 		mAudioPlayerServiceHandler.onActivityResume();
