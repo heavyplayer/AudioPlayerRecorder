@@ -1,6 +1,7 @@
 package com.heavyplayer.audioplayerrecorder.widget;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -8,11 +9,10 @@ import android.util.AttributeSet;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import com.heavyplayer.audioplayerrecorder.R;
 
-public class AudioPlayerLayout extends LinearLayout {
+public class AudioPlayerLayout extends ViewGroup {
 	public OnDetachListener mOnDetachListener;
 
 	private PlayPauseImageButton mButton;
@@ -34,17 +34,22 @@ public class AudioPlayerLayout extends LinearLayout {
 	}
 
 	private void init(Context context, AttributeSet attrs) {
-		setOrientation(HORIZONTAL);
 		setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS); // Enhance compatibility with ListView.
 
 		int playResId = 0;
 		int pauseResId = 0;
+		int buttonBackgroundResId = 0;
+		int seekBarMarginLeftResId = R.dimen.apl_seek_bar_margin_left;
 		if(attrs != null) {
 			final TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.AudioPlayerLayout);
 			if(ta != null) {
 				try {
 					playResId = ta.getResourceId(R.styleable.AudioPlayerLayout_playSrc, 0);
 					pauseResId = ta.getResourceId(R.styleable.AudioPlayerLayout_pauseSrc, 0);
+					buttonBackgroundResId = ta.getResourceId(R.styleable.AudioPlayerLayout_buttonBackground, 0);
+					seekBarMarginLeftResId = ta.getResourceId(
+							R.styleable.AudioPlayerLayout_seekBarMarginLeft,
+							R.dimen.apl_seek_bar_margin_left);
 				} finally {
 					ta.recycle();
 				}
@@ -56,12 +61,18 @@ public class AudioPlayerLayout extends LinearLayout {
 			mButton.setPlayDrawableResource(playResId);
 		if(pauseResId != 0)
 			mButton.setPauseDrawableResource(pauseResId);
+		mButton.setPadding(0, 0, 0, 0); // Remove image button padding, before setting the background.
+		if(buttonBackgroundResId != 0)
+			mButton.setBackgroundResource(buttonBackgroundResId);
 		final LayoutParams buttonParams =
 				new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
 		mSeekBar = new SeekBar(context);
-		final LayoutParams seekBarParams =
-				new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+		final MarginLayoutParams seekBarParams =
+				new MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+		final Resources resources = getResources();
+		if(resources != null)
+			seekBarParams.leftMargin = resources.getDimensionPixelSize(seekBarMarginLeftResId);
 
 		addView(mButton, buttonParams);
 		addView(mSeekBar, seekBarParams);
@@ -73,6 +84,45 @@ public class AudioPlayerLayout extends LinearLayout {
 
 	public SeekBar getSeekBar() {
 		return mSeekBar;
+	}
+
+	@Override
+	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+		final int availableWidth = MeasureSpec.getSize(widthMeasureSpec);
+
+		// Measure button.
+		measureChild(mButton, widthMeasureSpec, heightMeasureSpec);
+
+		// Measure seek bar.
+		final int remainingWidth = availableWidth - mButton.getMeasuredWidth();
+		final int remainingWidthMeasureSpec = MeasureSpec.makeMeasureSpec(remainingWidth, MeasureSpec.EXACTLY);
+		measureChildWithMargins(mSeekBar, remainingWidthMeasureSpec, 0, heightMeasureSpec, 0);
+
+
+		final int measuredWidth = mButton.getMeasuredWidth() + mSeekBar.getMeasuredWidth();
+		final int measuredHeight = Math.max(mButton.getMeasuredHeight(), mSeekBar.getMeasuredHeight());
+
+		setMeasuredDimension(
+				resolveSize(measuredWidth, widthMeasureSpec),
+				resolveSize(measuredHeight, heightMeasureSpec));
+	}
+
+	@Override
+	protected void onLayout(boolean changed, int l, int t, int r, int b) {
+		// Layout button.
+		layoutChild(mButton, l, t, b);
+
+		// Layout seek bar.
+		final MarginLayoutParams seekBarParams = (MarginLayoutParams)mSeekBar.getLayoutParams();
+		final int seekBarLeftMargin = seekBarParams != null ? seekBarParams.leftMargin : 0;
+		layoutChild(mSeekBar, mButton.getMeasuredWidth() + seekBarLeftMargin, t, b);
+	}
+
+	protected void layoutChild(View child, int l, int t, int b) {
+		final int height = b - t;
+		final int measuredHeight = child.getMeasuredHeight();
+		final int nt = (int)((height - measuredHeight) / 2 + .5f);
+		child.layout(l, nt, l + child.getMeasuredWidth(), nt + measuredHeight);
 	}
 
 	@Override

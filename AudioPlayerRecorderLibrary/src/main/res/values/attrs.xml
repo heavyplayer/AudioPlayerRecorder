@@ -12,6 +12,8 @@
 	<declare-styleable name="AudioPlayerLayout">
 		<attr name="playSrc"/>
 		<attr name="pauseSrc"/>
+		<attr name="buttonBackground" format="reference"/>
+		<attr name="seekBarMarginLeft" format="reference"/>
 	</declare-styleable>
 
 </resources>

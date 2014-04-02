@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+	<dimen name="apl_seek_bar_margin_left">4dip</dimen>
+
+</resources>
