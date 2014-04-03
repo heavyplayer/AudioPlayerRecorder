@@ -88,19 +88,19 @@ public class AudioPlayerLayout extends ViewGroup {
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		final int availableWidth = MeasureSpec.getSize(widthMeasureSpec);
-
 		// Measure button.
 		measureChild(mButton, widthMeasureSpec, heightMeasureSpec);
 
 		// Measure seek bar.
-		final int remainingWidth = availableWidth - mButton.getMeasuredWidth();
+		final int remainingWidth = MeasureSpec.getSize(widthMeasureSpec) - mButton.getMeasuredWidth();
 		final int remainingWidthMeasureSpec = MeasureSpec.makeMeasureSpec(remainingWidth, MeasureSpec.EXACTLY);
 		measureChildWithMargins(mSeekBar, remainingWidthMeasureSpec, 0, heightMeasureSpec, 0);
 
-
-		final int measuredWidth = mButton.getMeasuredWidth() + mSeekBar.getMeasuredWidth();
-		final int measuredHeight = Math.max(mButton.getMeasuredHeight(), mSeekBar.getMeasuredHeight());
+		// Calculate max width and height, taking padding into account.
+		final int measuredWidth = mButton.getMeasuredWidth() + mSeekBar.getMeasuredWidth()
+				+ getPaddingLeft() + getPaddingRight();
+		final int measuredHeight = Math.max(mButton.getMeasuredHeight(), mSeekBar.getMeasuredHeight())
+				+ getPaddingTop() + getPaddingBottom();
 
 		setMeasuredDimension(
 				resolveSize(measuredWidth, widthMeasureSpec),
@@ -110,12 +110,14 @@ public class AudioPlayerLayout extends ViewGroup {
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
 		// Layout button.
-		layoutChild(mButton, l, t, b);
+		int left = getPaddingLeft() + l;
+		layoutChild(mButton, left, t, b);
 
 		// Layout seek bar.
 		final MarginLayoutParams seekBarParams = (MarginLayoutParams)mSeekBar.getLayoutParams();
 		final int seekBarLeftMargin = seekBarParams != null ? seekBarParams.leftMargin : 0;
-		layoutChild(mSeekBar, mButton.getMeasuredWidth() + seekBarLeftMargin, t, b);
+		left += mButton.getMeasuredWidth() + seekBarLeftMargin;
+		layoutChild(mSeekBar, left, t, b);
 	}
 
 	protected void layoutChild(View child, int l, int t, int b) {
