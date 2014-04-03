@@ -36,17 +36,25 @@ public class AudioPlayerLayout extends ViewGroup {
 	private void init(Context context, AttributeSet attrs) {
 		setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS); // Enhance compatibility with ListView.
 
+		// Default values.
 		int playResId = 0;
 		int pauseResId = 0;
+		int buttonWidth = ViewGroup.LayoutParams.WRAP_CONTENT;
+		int buttonHeight = ViewGroup.LayoutParams.WRAP_CONTENT;
 		int buttonBackgroundResId = 0;
 		int seekBarMarginLeftResId = R.dimen.apl_seek_bar_margin_left;
+
 		if(attrs != null) {
 			final TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.AudioPlayerLayout);
 			if(ta != null) {
 				try {
-					playResId = ta.getResourceId(R.styleable.AudioPlayerLayout_playSrc, 0);
-					pauseResId = ta.getResourceId(R.styleable.AudioPlayerLayout_pauseSrc, 0);
-					buttonBackgroundResId = ta.getResourceId(R.styleable.AudioPlayerLayout_buttonBackground, 0);
+					playResId = ta.getResourceId(R.styleable.AudioPlayerLayout_playSrc, playResId);
+					pauseResId = ta.getResourceId(R.styleable.AudioPlayerLayout_pauseSrc, pauseResId);
+					buttonWidth = ta.getDimensionPixelSize(R.styleable.AudioPlayerLayout_buttonWidth, buttonWidth);
+					buttonHeight = ta.getDimensionPixelSize(R.styleable.AudioPlayerLayout_buttonHeight, buttonHeight);
+					buttonBackgroundResId = ta.getResourceId(
+							R.styleable.AudioPlayerLayout_buttonBackground,
+							buttonBackgroundResId);
 					seekBarMarginLeftResId = ta.getResourceId(
 							R.styleable.AudioPlayerLayout_seekBarMarginLeft,
 							R.dimen.apl_seek_bar_margin_left);
@@ -64,8 +72,7 @@ public class AudioPlayerLayout extends ViewGroup {
 		mButton.setPadding(0, 0, 0, 0); // Remove image button padding, before setting the background.
 		if(buttonBackgroundResId != 0)
 			mButton.setBackgroundResource(buttonBackgroundResId);
-		final LayoutParams buttonParams =
-				new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+		final LayoutParams buttonParams = new LayoutParams(buttonWidth, buttonHeight);
 
 		mSeekBar = new SeekBar(context);
 		final MarginLayoutParams seekBarParams =
