@@ -117,7 +117,7 @@ public class AudioPlayerLayout extends ViewGroup {
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
 		// Layout button.
-		int left = getPaddingLeft() + l;
+		int left = getPaddingLeft();
 		layoutChild(mButton, left, t, b);
 
 		// Layout seek bar.
