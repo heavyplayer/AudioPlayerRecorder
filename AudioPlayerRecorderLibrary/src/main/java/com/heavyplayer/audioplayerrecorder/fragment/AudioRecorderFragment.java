@@ -19,7 +19,9 @@ import com.heavyplayer.audioplayerrecorder.R;
 import com.heavyplayer.audioplayerrecorder.service.AudioRecorderService;
 import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
 
-public class AudioRecorderFragment extends DialogFragment implements DialogInterface.OnClickListener {
+public class AudioRecorderFragment extends DialogFragment
+		implements DialogInterface.OnClickListener, View.OnClickListener {
+
 	public static final String TAG = AudioRecorderFragment.class.getSimpleName();
 
 	private static final String ARG_FILE_URI = "arg_file_uri";
@@ -83,6 +85,16 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 	}
 
 	@Override
+	public void onClick(View v) {
+		if(mAudioRecorderBinder != null) {
+			if(mAudioRecorderBinder.isRecording())
+				mAudioRecorderBinder.stopRecorder();
+			else
+				mAudioRecorderBinder.startRecorder();
+		}
+	}
+
+	@Override
 	public void onCancel(DialogInterface dialog) {
 		super.onCancel(dialog);
 		unbindServiceAndStop();
@@ -129,15 +141,19 @@ public class AudioRecorderFragment extends DialogFragment implements DialogInter
 	protected void registerMicrophone() {
 		final AudioRecorderMicrophone microphone =
 				(AudioRecorderMicrophone)getDialog().findViewById(android.R.id.input);
-		if(mAudioRecorderBinder != null && microphone != null)
+		if(mAudioRecorderBinder != null && microphone != null) {
 			mAudioRecorderBinder.registerAudioRecorderMicrophone(microphone);
+			microphone.setOnClickListener(this);
+		}
 	}
 
 	protected void unregisterMicrophone() {
 		final AudioRecorderMicrophone microphone =
 				(AudioRecorderMicrophone)getDialog().findViewById(android.R.id.input);
-		if(mAudioRecorderBinder != null && microphone != null)
+		if(mAudioRecorderBinder != null && microphone != null) {
 			mAudioRecorderBinder.unregisterAudioRecorderMicrophone(microphone);
+			microphone.setOnClickListener(null);
+		}
 	}
 
 	public void onStopRecording() {

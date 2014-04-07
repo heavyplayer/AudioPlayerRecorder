@@ -32,7 +32,10 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
 	private Set<AudioRecorderMicrophone> mMicrophones = new HashSet<>(1);
 
+	private Uri mFileUri;
+
 	private MediaRecorder mRecorder;
+	private boolean mIsRecording;
 
 	public static Intent getLaunchIntent(Context context, Uri fileUri) {
 		final Intent intent = new Intent(context, AudioRecorderService.class);
@@ -42,9 +45,9 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
 	@Override
 	public void onCreate() {
-		gainAudioFocus();
-
 		mHandler = new Handler();
+
+		mIsRecording = false;
 
 		// Tell the user we started.
 		Toast.makeText(this, R.string.local_service_started, Toast.LENGTH_SHORT).show();
@@ -52,55 +55,75 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		if(mRecorder == null)
-			initMediaRecorder((Uri)intent.getParcelableExtra(EXTRA_FILE_URI));
+		final Uri fileUri = intent.getParcelableExtra(EXTRA_FILE_URI);
+		if(mFileUri != fileUri) {
+			stop();
+			mFileUri = fileUri;
+			start();
+		}
 
 		// We want this service to continue running until it is explicitly stopped, so return sticky.
 		return START_STICKY;
 	}
 
-	protected void initMediaRecorder(Uri fileUri) {
-		try {
-			mRecorder = new MediaRecorder();
-			mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-			mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-			mRecorder.setOutputFile(fileUri.getPath());
-			mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+	protected void start() {
+		if(!mIsRecording) {
+			gainAudioFocus();
 
-			mRecorder.prepare();
+			if (mRecorder == null)
+				mRecorder = new MediaRecorder();
 
-			// Start recording.
-			mRecorder.start();
-			mHandler.post(mAmplitudeUpdater);
-		}
-		catch(Exception e){
-			Log.w(TAG, e);
-		}
-	}
-
-	@Override
-	public void onDestroy() {
-		if(mRecorder != null) {
 			try {
-				mRecorder.stop();
-				mRecorder.reset();
-				mRecorder.release();
-				mRecorder = null;
-			}
-			catch(Exception e) {
+				// Configure recorder.
+				mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+				mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+				mRecorder.setOutputFile(mFileUri.getPath());
+				mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+
+				mRecorder.prepare();
+
+				// Start recording.
+				mRecorder.start();
+
+				mIsRecording = true;
+
+				updateMicrophoneState();
+
+				startMicrophoneUpdater();
+			} catch (Exception e) {
 				Log.w(TAG, e);
 			}
 		}
+	}
 
-		abandonAudioFocus();
+	protected void stop() {
+		if(mIsRecording) {
+			if (mRecorder != null) {
+				try {
+					mRecorder.stop();
+					mRecorder.reset();
+
+					mIsRecording = false;
+
+					updateMicrophoneState();
+				} catch (Exception e) {
+					Log.w(TAG, e);
+				}
+			}
+
+			abandonAudioFocus();
+		}
+	}
+
+
+	@Override
+	public void onDestroy() {
+		stop();
+		mRecorder.release();
+		mRecorder = null;
 
 		// Tell the user we stopped.
 		Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
-	}
-
-	@Override
-	public IBinder onBind(Intent intent) {
-		return mBinder;
 	}
 
 	protected void gainAudioFocus() {
@@ -129,23 +152,25 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 		// Do nothing.
 	}
 
-	public class LocalBinder extends Binder {
-		public void registerAudioRecorderMicrophone(AudioRecorderMicrophone microphone) {
-			mMicrophones.add(microphone);
+	protected void updateMicrophoneState() {
+		for(AudioRecorderMicrophone microphone : mMicrophones) {
+			microphone.setSelected(mIsRecording);
 
-			mHandler.removeCallbacks(mAmplitudeUpdater);
-			mHandler.post(mAmplitudeUpdater);
+			if(!mIsRecording)
+				microphone.updateAmplitude(0, UPDATE_INTERVAL_MS * 3);
 		}
+	}
 
-		public void unregisterAudioRecorderMicrophone(AudioRecorderMicrophone microphone) {
-			mMicrophones.remove(microphone);
-		}
+	protected void startMicrophoneUpdater() {
+		// Star updating microphones amplitude.
+		mHandler.removeCallbacks(mAmplitudeUpdater);
+		mHandler.post(mAmplitudeUpdater);
 	}
 
 	private class AmplitudeUpdater implements Runnable {
 		@Override
 		public void run() {
-			if(mRecorder != null && mMicrophones.size() > 0) {
+			if(mIsRecording && mRecorder != null && mMicrophones.size() > 0) {
 				final int amplitude = mRecorder.getMaxAmplitude();
 
 				for(AudioRecorderMicrophone microphone : mMicrophones)
@@ -154,6 +179,39 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 				// Post animation runnable to update the animation.
 				mHandler.postDelayed(mAmplitudeUpdater, UPDATE_INTERVAL_MS);
 			}
+		}
+	}
+
+	@Override
+	public IBinder onBind(Intent intent) {
+		return mBinder;
+	}
+
+	public class LocalBinder extends Binder {
+		public void registerAudioRecorderMicrophone(AudioRecorderMicrophone microphone) {
+			mMicrophones.add(microphone);
+
+			// Configure microphone state.
+			microphone.setSelected(mIsRecording);
+
+			// Start microphone update.
+			startMicrophoneUpdater();
+		}
+
+		public void unregisterAudioRecorderMicrophone(AudioRecorderMicrophone microphone) {
+			mMicrophones.remove(microphone);
+		}
+
+		public boolean isRecording() {
+			return mIsRecording;
+		}
+
+		public void startRecorder() {
+			start();
+		}
+
+		public void stopRecorder() {
+			stop();
 		}
 	}
 }
