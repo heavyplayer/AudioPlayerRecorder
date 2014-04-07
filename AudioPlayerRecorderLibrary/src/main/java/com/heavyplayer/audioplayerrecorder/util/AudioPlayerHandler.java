@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.SeekBar;
 import com.heavyplayer.audioplayerrecorder.widget.AudioPlayerLayout;
 import com.heavyplayer.audioplayerrecorder.widget.PlayPauseImageButton;
+import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 
 import java.io.IOException;
 
@@ -128,9 +129,14 @@ public class AudioPlayerHandler implements
 
 	public void registerView(AudioPlayerLayout view) {
 		mView = view;
-		mView.setOnDetachListener(new AudioPlayerLayout.OnDetachListener() {
+		mView.setOnDetachListener(new OnDetachListener() {
 			@Override
 			public void onStartTemporaryDetach(View v) {
+				clearView();
+			}
+
+			@Override
+			public void onDetachedFromWindow(View v) {
 				clearView();
 			}
 		});

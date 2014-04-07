@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.SeekBar;
 import com.heavyplayer.audioplayerrecorder.R;
+import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 
 public class AudioPlayerLayout extends ViewGroup {
 	public OnDetachListener mOnDetachListener;
@@ -135,6 +136,14 @@ public class AudioPlayerLayout extends ViewGroup {
 	}
 
 	@Override
+	protected void onDetachedFromWindow() {
+		super.onDetachedFromWindow();
+
+		if(mOnDetachListener != null)
+			mOnDetachListener.onDetachedFromWindow(this);
+	}
+
+	@Override
 	public void onStartTemporaryDetach() {
 		super.onStartTemporaryDetach();
 
@@ -209,9 +218,5 @@ public class AudioPlayerLayout extends ViewGroup {
 				return new SavedState[0];
 			}
 		};
-	}
-
-	public interface OnDetachListener {
-		public void onStartTemporaryDetach(View v);
 	}
 }

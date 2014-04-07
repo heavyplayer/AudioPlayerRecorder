@@ -15,6 +15,7 @@ import android.view.animation.Animation;
 import android.view.animation.ScaleAnimation;
 import android.widget.ImageView;
 import com.heavyplayer.audioplayerrecorder.R;
+import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 
 public class AudioRecorderMicrophone extends ViewGroup {
 	private static final float MAX_RELATIVE_SCALE = 0.8f;
@@ -26,6 +27,8 @@ public class AudioRecorderMicrophone extends ViewGroup {
 	private int mMaxAmplitude = MAX_AMPLITUDE_DEFAULT;
 
 	private float mCurrentAnimationScale = 1.0f; // In the beginning, the background view has the same size as the microphone view.
+
+	public OnDetachListener mOnDetachListener;
 
 	public AudioRecorderMicrophone(Context context) {
 		super(context);
@@ -138,5 +141,25 @@ public class AudioRecorderMicrophone extends ViewGroup {
 		animation.setFillAfter(true);
 		animation.setDuration(duration);
 		mBackgroundView.startAnimation(animation);
+	}
+
+	@Override
+	protected void onDetachedFromWindow() {
+		super.onDetachedFromWindow();
+
+		if(mOnDetachListener != null)
+			mOnDetachListener.onDetachedFromWindow(this);
+	}
+
+	@Override
+	public void onStartTemporaryDetach() {
+		super.onStartTemporaryDetach();
+
+		if(mOnDetachListener != null)
+			mOnDetachListener.onStartTemporaryDetach(this);
+	}
+
+	public void setOnDetachListener(OnDetachListener listener) {
+		mOnDetachListener = listener;
 	}
 }

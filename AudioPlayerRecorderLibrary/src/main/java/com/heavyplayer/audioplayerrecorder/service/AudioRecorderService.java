@@ -11,9 +11,11 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 import com.heavyplayer.audioplayerrecorder.R;
 import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
+import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -22,8 +24,6 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 	public static final String TAG = AudioRecorderService.class.getSimpleName();
 
 	private final static int UPDATE_INTERVAL_MS = 100;
-
-	public static final String EXTRA_FILE_URI = "extra_file_uri";
 
 	private final IBinder mBinder = new LocalBinder();
 
@@ -37,12 +37,6 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 	private MediaRecorder mRecorder;
 	private boolean mIsRecording;
 
-	public static Intent getLaunchIntent(Context context, Uri fileUri) {
-		final Intent intent = new Intent(context, AudioRecorderService.class);
-		intent.putExtra(EXTRA_FILE_URI, fileUri);
-		return intent;
-	}
-
 	@Override
 	public void onCreate() {
 		mHandler = new Handler();
@@ -55,19 +49,18 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		final Uri fileUri = intent.getParcelableExtra(EXTRA_FILE_URI);
-		if(mFileUri != fileUri) {
-			stop();
-			mFileUri = fileUri;
-			start();
-		}
-
 		// We want this service to continue running until it is explicitly stopped, so return sticky.
 		return START_STICKY;
 	}
 
-	protected void start() {
-		if(!mIsRecording) {
+	protected void start(Uri fileUri) {
+		// If the output file changes, we want to stop the current recording.
+		if(mFileUri == null || !mFileUri.equals(fileUri)) {
+			stop();
+			mFileUri = fileUri;
+		}
+
+		if(!mIsRecording && mFileUri != null) {
 			gainAudioFocus();
 
 			if (mRecorder == null)
@@ -98,7 +91,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
 	protected void stop() {
 		if(mIsRecording) {
-			if (mRecorder != null) {
+			if(mRecorder != null) {
 				try {
 					mRecorder.stop();
 					mRecorder.reset();
@@ -119,8 +112,10 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 	@Override
 	public void onDestroy() {
 		stop();
-		mRecorder.release();
-		mRecorder = null;
+		if(mRecorder != null) {
+			mRecorder.release();
+			mRecorder = null;
+		}
 
 		// Tell the user we stopped.
 		Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
@@ -194,20 +189,26 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 			// Configure microphone state.
 			microphone.setSelected(mIsRecording);
 
+			microphone.setOnDetachListener(new OnDetachListener() {
+				@Override
+				public void onDetachedFromWindow(View v) {
+					mMicrophones.remove(v);
+				}
+
+				@Override
+				public void onStartTemporaryDetach(View v) { }
+			});
+
 			// Start microphone update.
 			startMicrophoneUpdater();
-		}
-
-		public void unregisterAudioRecorderMicrophone(AudioRecorderMicrophone microphone) {
-			mMicrophones.remove(microphone);
 		}
 
 		public boolean isRecording() {
 			return mIsRecording;
 		}
 
-		public void startRecorder() {
-			start();
+		public void startRecorder(Uri fileUri) {
+			start(fileUri);
 		}
 
 		public void stopRecorder() {
