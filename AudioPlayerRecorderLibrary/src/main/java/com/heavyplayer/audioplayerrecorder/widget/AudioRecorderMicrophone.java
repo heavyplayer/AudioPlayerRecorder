@@ -87,13 +87,13 @@ public class AudioRecorderMicrophone extends ViewGroup {
 		if(lp != null && lp.width == LayoutParams.MATCH_PARENT)
 			width = MeasureSpec.getSize(widthMeasureSpec);
 		else
-			width = (int)(microphoneMeasuredWidth * (1.0f + MAX_RELATIVE_SCALE) + .5f);
+			width = (int)(circleDiameter * (1.0f + MAX_RELATIVE_SCALE) + .5f);
 
 		// Calculate height.
 		if(lp != null && lp.height == LayoutParams.MATCH_PARENT)
 			height = MeasureSpec.getSize(heightMeasureSpec);
 		else
-			height = (int)(microphoneMeasuredHeight * (1.0f + MAX_RELATIVE_SCALE) + .5f);
+			height = (int)(circleDiameter * (1.0f + MAX_RELATIVE_SCALE) + .5f);
 
 		// Set dimensions; respect the contract.
 		setMeasuredDimension(width, height);
