@@ -112,7 +112,7 @@ public class AudioRecorderFragment extends DialogFragment
 	}
 
 	@Override
-	final public void onServiceBind(IBinder binder) {
+	public void onServiceBind(IBinder binder) {
 		registerMicrophone();
 
 		if(mStartRecorderOnBind) {
@@ -122,7 +122,7 @@ public class AudioRecorderFragment extends DialogFragment
 	}
 
 	@Override
-	final public void onServiceUnbind(IBinder binder) { }
+	public void onServiceUnbind(IBinder binder) { }
 
 	protected void registerMicrophone() {
 		final AudioRecorderService.LocalBinder binder = mAudioRecorderServiceManager.getBinder();
@@ -137,11 +137,7 @@ public class AudioRecorderFragment extends DialogFragment
 	}
 
 	@Override
-	final public void onServiceStop() {
-		onStopRecording();
-	}
-
-	protected void onStopRecording() {
-		// Purposely empty. Sub-classes may use this.
+	public void onServiceStop() {
+		// The recording stopped. Sub-classes may use this.
 	}
 }
