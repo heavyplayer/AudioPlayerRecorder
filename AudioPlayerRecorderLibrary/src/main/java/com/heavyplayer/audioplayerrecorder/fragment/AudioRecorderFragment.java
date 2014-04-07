@@ -95,7 +95,13 @@ public class AudioRecorderFragment extends DialogFragment
 	}
 
 	@Override
-	public void onClick(View v) {
+	final public void onClick(View v) {
+		final AudioRecorderService.LocalBinder binder = mAudioRecorderServiceManager.getBinder();
+		final boolean isRecording = binder != null && binder.isRecording();
+		onMicrophoneClick(v, isRecording);
+	}
+
+	protected void onMicrophoneClick(View v, boolean isRecording) {
 		final AudioRecorderService.LocalBinder binder = mAudioRecorderServiceManager.getBinder();
 		if(binder != null) {
 			if(binder.isRecording())
