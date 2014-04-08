@@ -32,26 +32,34 @@ public class ServiceManager implements ServiceConnection {
 		startService();
 	}
 
-	public void onActivityResume() {
-		if(!mIsServiceRunning)
+	final public void onActivityResume() {
+		onActivateService(!mIsServiceRunning);
+	}
+
+	final public void onActivityPause() {
+		onDeactivateService(mIsPortrait == isPortrait());
+	}
+
+	final public void onFragmentResume() {
+		onActivityResume();
+	}
+
+	final public void onFragmentPause() {
+		onActivityPause();
+	}
+
+	protected void onActivateService(boolean startService) {
+		if(startService)
 			startService();
 
 		bindService();
 	}
 
-	public void onActivityPause() {
+	protected void onDeactivateService(boolean stopService) {
 		unbindService();
 
-		if(mIsPortrait == isPortrait())
+		if(stopService)
 			stopService();
-	}
-
-	public void onFragmentResume() {
-		onActivityResume();
-	}
-
-	public void onFragmentPause() {
-		onActivityPause();
 	}
 
 	protected void startService() {
@@ -61,10 +69,10 @@ public class ServiceManager implements ServiceConnection {
 	}
 
 	protected void stopService() {
-		mActivity.stopService(new Intent(mActivity, mServiceClass));
-
 		if(mStateListener != null)
 			mStateListener.onServiceStop();
+
+		mActivity.stopService(new Intent(mActivity, mServiceClass));
 
 		mIsServiceRunning = false;
 	}
@@ -80,6 +88,7 @@ public class ServiceManager implements ServiceConnection {
 		if(mBinder != null) {
 			if(mStateListener != null)
 				mStateListener.onServiceUnbind(mBinder);
+
 			mBinder = null;
 
 			mActivity.unbindService(this);
@@ -99,6 +108,7 @@ public class ServiceManager implements ServiceConnection {
 	@Override
 	final public void onServiceConnected(ComponentName name, IBinder service) {
 		mBinder = service;
+
 		if(mStateListener != null)
 			mStateListener.onServiceBind(mBinder);
 
