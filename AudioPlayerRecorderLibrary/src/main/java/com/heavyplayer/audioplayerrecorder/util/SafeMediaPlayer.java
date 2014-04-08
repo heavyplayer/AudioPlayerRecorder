@@ -136,6 +136,12 @@ public class SafeMediaPlayer extends MediaPlayer
 	public void onCompletion(MediaPlayer mp) {
 		mIsGoingToPlay = false;
 
+		// Make sure the current position is synced upon completion.
+		final int currentPosition = super.getCurrentPosition();
+		final int duration = super.getDuration();
+		if(currentPosition < duration)
+			super.seekTo(duration);
+
 		if(mOnCompletionListener != null)
 			mOnCompletionListener.onCompletion(mp);
 	}
