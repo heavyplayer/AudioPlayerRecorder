@@ -70,9 +70,13 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 			try {
 				// Configure recorder.
 				mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-				mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+				mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
 				mRecorder.setOutputFile(mFileUri.getPath());
-				mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+				mRecorder.setAudioEncoder(Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD_MR1 ?
+						MediaRecorder.AudioEncoder.DEFAULT :
+						MediaRecorder.AudioEncoder.AAC);
+				mRecorder.setAudioChannels(1);
+				mRecorder.setAudioEncodingBitRate(22050);
 
 				mRecorder.prepare();
 
