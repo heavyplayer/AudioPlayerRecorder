@@ -14,6 +14,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 import com.heavyplayer.audioplayerrecorder.R;
+import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
 import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
 import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 
@@ -43,8 +44,8 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
 		mIsRecording = false;
 
-		// Tell the user we started.
-		Toast.makeText(this, R.string.local_service_started, Toast.LENGTH_SHORT).show();
+		if(BuildUtils.isDebug(this))
+			Toast.makeText(this, R.string.local_service_started, Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
@@ -117,8 +118,8 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 			mRecorder = null;
 		}
 
-		// Tell the user we stopped.
-		Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
+		if(BuildUtils.isDebug(this))
+			Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
 	}
 
 	protected void gainAudioFocus() {

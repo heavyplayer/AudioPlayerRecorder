@@ -9,6 +9,7 @@ import android.os.IBinder;
 import android.widget.Toast;
 import com.heavyplayer.audioplayerrecorder.R;
 import com.heavyplayer.audioplayerrecorder.util.AudioPlayerHandler;
+import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
 import com.heavyplayer.audioplayerrecorder.widget.AudioPlayerLayout;
 
 import java.util.HashMap;
@@ -23,8 +24,8 @@ public class AudioPlayerService extends Service {
 
 	@Override
 	public void onCreate() {
-		// Tell the user we started.
-		Toast.makeText(this, R.string.local_service_started, Toast.LENGTH_SHORT).show();
+		if(BuildUtils.isDebug(this))
+			Toast.makeText(this, R.string.local_service_started, Toast.LENGTH_SHORT).show();
 
 		mBinder = onCreateLocalBinder();
 
@@ -43,8 +44,8 @@ public class AudioPlayerService extends Service {
 
 	@Override
 	public void onDestroy() {
-		// Tell the user we stopped.
-		Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
+		if(BuildUtils.isDebug(this))
+			Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
 
 		for(AudioPlayerHandler player : mPlayers.values())
 			player.destroy();
