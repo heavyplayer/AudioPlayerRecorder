@@ -39,16 +39,6 @@ public class AudioRecorderFragment extends DialogFragment
 		return fragment;
 	}
 
-	public static AudioRecorderFragment createInstance(Uri fileUri) {
-		final Bundle args = new Bundle();
-		args.putParcelable(ARG_FILE_URI, fileUri);
-
-		final AudioRecorderFragment fragment = new AudioRecorderFragment();
-		fragment.setArguments(args);
-
-		return fragment;
-	}
-
 	@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);

@@ -87,7 +87,7 @@ public class RecorderActivity extends ActionBarActivity implements AdapterView.O
 	public void onRecord(View v) {
 		final String fileName = getSelectedItem().getFileName();
 		if(fileName != null)
-			AudioRecorderFragment.createInstance(generateExternalStorageFileUri(fileName))
+			AudioRecorderFragment.newInstance(generateExternalStorageFileUri(fileName))
 					.show(getSupportFragmentManager(), AudioRecorderFragment.TAG);
 	}
 
