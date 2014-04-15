@@ -16,7 +16,7 @@ import com.heavyplayer.audioplayerrecorder.service.manager.ServiceManager;
 import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
 
 public class AudioRecorderFragment extends DialogFragment
-		implements View.OnClickListener, ServiceManager.StateListener {
+		implements View.OnClickListener, ServiceManager.StateListener, AudioRecorderService.AudioRecorderStateListener {
 	public static final String TAG = AudioRecorderFragment.class.getSimpleName();
 
 	private static final String ARG_FILE_URI = "arg_file_uri";
@@ -103,7 +103,7 @@ public class AudioRecorderFragment extends DialogFragment
 
 	@Override
 	public void onServiceBind(IBinder binder) {
-		registerMicrophone();
+		registerOnAudioRecorderService((AudioRecorderService.LocalBinder)binder);
 
 		if(mStartRecorderOnBind) {
 			mStartRecorderOnBind = false;
@@ -114,20 +114,32 @@ public class AudioRecorderFragment extends DialogFragment
 	@Override
 	public void onServiceUnbind(IBinder binder) { }
 
-	protected void registerMicrophone() {
-		final AudioRecorderService.LocalBinder binder = mAudioRecorderServiceManager.getBinder();
-		if(binder != null) {
-			final AudioRecorderMicrophone microphone =
-					(AudioRecorderMicrophone)getDialog().findViewById(android.R.id.input);
-			if(microphone != null) {
-				binder.registerAudioRecorderMicrophone(microphone);
-				microphone.setOnClickListener(this);
-			}
-		}
+	protected void registerOnAudioRecorderService(AudioRecorderService.LocalBinder binder) {
+		final AudioRecorderMicrophone microphone =
+				(AudioRecorderMicrophone)getDialog().findViewById(android.R.id.input);
+		if(microphone != null)
+			microphone.setOnClickListener(this);
+
+		binder.register(microphone, this);
 	}
 
 	@Override
 	public void onServiceStop() {
-		// The recording stopped. Sub-classes may use this.
+		// Purposely empty.
+	}
+
+	@Override
+	public void onStartRecorder() {
+		// Purposely empty.
+	}
+
+	@Override
+	public void onStopRecorder() {
+		// Purposely empty.
+	}
+
+	@Override
+	public void onTimeLimitExceeded() {
+		// Purposely empty.
 	}
 }

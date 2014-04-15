@@ -18,9 +18,6 @@ import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
 import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
 import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class AudioRecorderService extends Service implements AudioManager.OnAudioFocusChangeListener {
 	public static final String TAG = AudioRecorderService.class.getSimpleName();
 
@@ -29,9 +26,14 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 	private final IBinder mBinder = new LocalBinder();
 
 	private Handler mHandler;
-	private AmplitudeUpdater mAmplitudeUpdater = new AmplitudeUpdater();
 
-	private Set<AudioRecorderMicrophone> mMicrophones = new HashSet<>(1);
+	private AudioRecorderMicrophone mMicrophone;
+	private MicrophoneAmplitudeUpdater mMicrophoneAmplitudeUpdater = new MicrophoneAmplitudeUpdater();
+
+	private AudioRecorderStateListener mStateListener;
+
+	private Long mTimeLimit;
+	private TimeLimitStopper mTimeLimitStopper = new TimeLimitStopper();
 
 	private Uri mFileUri;
 
@@ -64,7 +66,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 		if(!mIsRecording && mFileUri != null) {
 			gainAudioFocus();
 
-			if (mRecorder == null)
+			if(mRecorder == null)
 				mRecorder = new MediaRecorder();
 
 			try {
@@ -85,10 +87,16 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
 				mIsRecording = true;
 
+				scheduleTimeLimitStopper();
+
 				updateMicrophoneState();
 
 				startMicrophoneUpdater();
-			} catch (Exception e) {
+
+				if(mStateListener != null)
+					mStateListener.onStartRecorder();
+			}
+			catch (Exception e) {
 				Log.w(TAG, e);
 			}
 		}
@@ -103,8 +111,14 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
 					mIsRecording = false;
 
+					removeTimeLimitStopper();
+
 					updateMicrophoneState();
-				} catch (Exception e) {
+
+					if(mStateListener != null)
+						mStateListener.onStopRecorder();
+				}
+				catch (Exception e) {
 					Log.w(TAG, e);
 				}
 			}
@@ -152,33 +166,54 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 		// Do nothing.
 	}
 
+	protected void scheduleTimeLimitStopper() {
+		if(mTimeLimit != null)
+			mHandler.postDelayed(mTimeLimitStopper, mTimeLimit);
+	}
+
+	protected void removeTimeLimitStopper() {
+		mHandler.removeCallbacks(mTimeLimitStopper);
+	}
+
 	protected void updateMicrophoneState() {
-		for(AudioRecorderMicrophone microphone : mMicrophones) {
-			microphone.setSelected(mIsRecording);
+		if(mMicrophone != null) {
+			mMicrophone.setSelected(mIsRecording);
 
 			if(!mIsRecording)
-				microphone.updateAmplitude(0, UPDATE_INTERVAL_MS * 3);
+				mMicrophone.updateAmplitude(0, UPDATE_INTERVAL_MS * 3);
 		}
 	}
 
 	protected void startMicrophoneUpdater() {
 		// Star updating microphones amplitude.
-		mHandler.removeCallbacks(mAmplitudeUpdater);
-		mHandler.post(mAmplitudeUpdater);
+		mHandler.removeCallbacks(mMicrophoneAmplitudeUpdater);
+		mHandler.post(mMicrophoneAmplitudeUpdater);
 	}
 
-	private class AmplitudeUpdater implements Runnable {
+	private class MicrophoneAmplitudeUpdater implements Runnable {
 		@Override
 		public void run() {
-			if(mIsRecording && mRecorder != null && mMicrophones.size() > 0) {
+			if(mIsRecording && mRecorder != null && mMicrophone != null) {
 				final int amplitude = mRecorder.getMaxAmplitude();
 
-				for(AudioRecorderMicrophone microphone : mMicrophones)
-					microphone.updateAmplitude(amplitude, UPDATE_INTERVAL_MS);
+				mMicrophone.updateAmplitude(amplitude, UPDATE_INTERVAL_MS);
 
 				// Post animation runnable to update the animation.
-				mHandler.postDelayed(mAmplitudeUpdater, UPDATE_INTERVAL_MS);
+				mHandler.postDelayed(mMicrophoneAmplitudeUpdater, UPDATE_INTERVAL_MS);
 			}
+		}
+	}
+
+	/**
+	 * Stops the recorder if the time limit is reached.
+	 */
+	public class TimeLimitStopper implements Runnable {
+		@Override
+		public void run() {
+			stop();
+
+			if(mStateListener != null)
+				mStateListener.onTimeLimitExceeded();
 		}
 	}
 
@@ -188,8 +223,9 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 	}
 
 	public class LocalBinder extends Binder {
-		public void registerAudioRecorderMicrophone(AudioRecorderMicrophone microphone) {
-			mMicrophones.add(microphone);
+		public void register(AudioRecorderMicrophone microphone, AudioRecorderStateListener listener) {
+			mMicrophone = microphone;
+			mStateListener = listener;
 
 			// Configure microphone state.
 			microphone.setSelected(mIsRecording);
@@ -197,7 +233,8 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 			microphone.setOnDetachListener(new OnDetachListener() {
 				@Override
 				public void onDetachedFromWindow(View v) {
-					mMicrophones.remove(v);
+					if(mMicrophone == v)
+						mMicrophone = null;
 				}
 
 				@Override
@@ -208,8 +245,11 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 			startMicrophoneUpdater();
 		}
 
-		public boolean isRecording() {
-			return mIsRecording;
+		/**
+		 * Time limit will apply the next time you call {@link #startRecorder(android.net.Uri)}.
+		 */
+		public void setTimeLimit(long timeLimit) {
+			mTimeLimit = timeLimit;
 		}
 
 		public void startRecorder(Uri fileUri) {
@@ -219,5 +259,15 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 		public void stopRecorder() {
 			stop();
 		}
+
+		public boolean isRecording() {
+			return mIsRecording;
+		}
+	}
+
+	public static interface AudioRecorderStateListener {
+		public void onStartRecorder();
+		public void onStopRecorder();
+		public void onTimeLimitExceeded();
 	}
 }
