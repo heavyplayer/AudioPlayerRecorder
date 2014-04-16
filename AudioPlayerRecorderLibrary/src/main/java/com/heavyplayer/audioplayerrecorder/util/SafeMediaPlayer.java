@@ -13,8 +13,8 @@ public class SafeMediaPlayer extends MediaPlayer
 	private State mState;
 	private boolean mIsGoingToPlay;
 
-	private int mCurrentPosition;
-	private int mDuration;
+	private Integer mCurrentPosition;
+	private Integer mDuration;
 
 	private enum State {
 		CREATED, PREPARING, PREPARED, STARTED
@@ -59,6 +59,10 @@ public class SafeMediaPlayer extends MediaPlayer
 		return mState != State.CREATED;
 	}
 
+	protected boolean isPreparedInner() {
+		return mState == State.PREPARED || mState == State.STARTED;
+	}
+
 	@Override
 	public void prepare() throws IllegalStateException {
 		prepareAsync();
@@ -66,15 +70,17 @@ public class SafeMediaPlayer extends MediaPlayer
 
 	@Override
 	public void prepareAsync() throws IllegalStateException {
-		super.prepareAsync();
 		mIsGoingToPlay = false;
+
+		super.prepareAsync();
+		mState = State.PREPARING;
 	}
 
 	@Override
 	public void onPrepared(MediaPlayer mp) {
 		mState = State.PREPARED;
 
-		adjustCurrentPositionToDuration();
+		adjustCurrentPositionAndDuration();
 
 		if(mOnPreparedListener != null)
 			mOnPreparedListener.onPrepared(mp);
@@ -87,10 +93,11 @@ public class SafeMediaPlayer extends MediaPlayer
 	public void start() throws IllegalStateException {
 		mIsGoingToPlay = true;
 
-		if(mState != State.CREATED) {
+		if(isPreparedInner()) {
 			final boolean isStarting = !isPlaying();
 			super.start();
 			mState = State.STARTED;
+			mCurrentPosition = null;
 
 			if(isStarting && mOnStartListener != null)
 				mOnStartListener.onStart(this);
@@ -107,8 +114,10 @@ public class SafeMediaPlayer extends MediaPlayer
 
 	@Override
 	public void seekTo(int msec) throws IllegalStateException {
-		if(mState == State.STARTED)
+		if(isPreparedInner()) {
 			super.seekTo(msec);
+			mCurrentPosition = null;
+		}
 		else
 			mCurrentPosition = msec < 0 ? 0 : (msec > mDuration ? mDuration : msec);
 	}
@@ -117,9 +126,8 @@ public class SafeMediaPlayer extends MediaPlayer
 	public void stop() throws IllegalStateException {
 		mIsGoingToPlay = false;
 
-		if(mState != State.CREATED) {
+		if(isPreparedInner()) {
 			super.stop();
-			mCurrentPosition = 0;
 			mState = State.PREPARED;
 		}
 	}
@@ -136,11 +144,7 @@ public class SafeMediaPlayer extends MediaPlayer
 	public void onCompletion(MediaPlayer mp) {
 		mIsGoingToPlay = false;
 
-		// Make sure the current position is synced upon completion.
-		final int currentPosition = super.getCurrentPosition();
-		final int duration = super.getDuration();
-		if(currentPosition < duration)
-			super.seekTo(duration);
+		mCurrentPosition = getDuration();
 
 		if(mOnCompletionListener != null)
 			mOnCompletionListener.onCompletion(mp);
@@ -156,23 +160,20 @@ public class SafeMediaPlayer extends MediaPlayer
 
 	@Override
 	public int getCurrentPosition() {
-		return mState == State.STARTED ? super.getCurrentPosition() : mCurrentPosition;
+		return mCurrentPosition != null ? mCurrentPosition : super.getCurrentPosition();
 	}
 
 	@Override
 	public int getDuration() {
-		return mState == State.STARTED ? super.getDuration() : mDuration;
+		return mDuration != null ? mDuration : super.getDuration();
 	}
 
-	private void adjustCurrentPositionToDuration() {
+	private void adjustCurrentPositionAndDuration() {
+		final float percent = getCurrentPosition() / (float)getDuration();
 		final int duration = super.getDuration();
 		if(mDuration != duration) {
-			mCurrentPosition = (int)((mCurrentPosition / (float)mDuration) * duration);
 			mDuration = duration;
-
-			final int currentPosition = super.getCurrentPosition();
-			if(mCurrentPosition != currentPosition)
-				super.seekTo(mCurrentPosition);
+			seekTo((int)(mDuration * percent));
 		}
 	}
 
