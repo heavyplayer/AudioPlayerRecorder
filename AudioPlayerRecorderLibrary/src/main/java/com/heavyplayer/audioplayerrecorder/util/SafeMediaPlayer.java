@@ -4,6 +4,7 @@ import android.media.MediaPlayer;
 
 public class SafeMediaPlayer extends MediaPlayer
 		implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
+	private final static int CURRENT_POSITION_MIN_PROGRESS = 128;
 
 	private OnPreparedListener mOnPreparedListener;
 	private OnStartListener mOnStartListener;
@@ -14,6 +15,7 @@ public class SafeMediaPlayer extends MediaPlayer
 	private boolean mIsGoingToPlay;
 
 	private Integer mCurrentPosition;
+	private Integer mLastCurrentPosition;
 	private Integer mDuration;
 
 	private enum State {
@@ -98,6 +100,7 @@ public class SafeMediaPlayer extends MediaPlayer
 			super.start();
 			mState = State.STARTED;
 			mCurrentPosition = null;
+			mLastCurrentPosition = null;
 
 			if(isStarting && mOnStartListener != null)
 				mOnStartListener.onStart(this);
@@ -117,9 +120,16 @@ public class SafeMediaPlayer extends MediaPlayer
 		if(isPreparedInner()) {
 			super.seekTo(msec);
 			mCurrentPosition = null;
+			mLastCurrentPosition = ensureValidPosition(msec);
 		}
-		else
-			mCurrentPosition = msec < 0 ? 0 : (msec > mDuration ? mDuration : msec);
+		else {
+			mCurrentPosition = ensureValidPosition(msec);
+			mLastCurrentPosition = null;
+		}
+	}
+
+	private int ensureValidPosition(int msec) {
+		return msec < 0 ? 0 : (msec > mDuration ? mDuration : msec);
 	}
 
 	@Override
@@ -136,6 +146,7 @@ public class SafeMediaPlayer extends MediaPlayer
 	public void reset() {
 		super.reset();
 		mCurrentPosition = 0;
+		mLastCurrentPosition = null;
 		mDuration = 100;
 		mState = State.CREATED;
 	}
@@ -145,6 +156,7 @@ public class SafeMediaPlayer extends MediaPlayer
 		mIsGoingToPlay = false;
 
 		mCurrentPosition = getDuration();
+		mLastCurrentPosition = null;
 
 		if(mOnCompletionListener != null)
 			mOnCompletionListener.onCompletion(mp);
@@ -160,7 +172,24 @@ public class SafeMediaPlayer extends MediaPlayer
 
 	@Override
 	public int getCurrentPosition() {
-		return mCurrentPosition != null ? mCurrentPosition : super.getCurrentPosition();
+		if(mCurrentPosition != null)
+			return mCurrentPosition;
+		else {
+			// HACK: Don't let the progress go back and ensure a minimum progress.
+			// Sometimes the MediaPlayer has some issues with the codecs
+			// and getCurrentPosition() goes back in the progress.
+			final int currentPosition = super.getCurrentPosition();
+			final int result;
+			if(mLastCurrentPosition == null || mLastCurrentPosition <= currentPosition) {
+				result = currentPosition;
+				mLastCurrentPosition = currentPosition;
+			}
+			else {
+				result = Math.min(mLastCurrentPosition + CURRENT_POSITION_MIN_PROGRESS, getDuration());
+			}
+
+			return result;
+		}
 	}
 
 	@Override
