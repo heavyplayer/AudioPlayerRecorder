@@ -10,6 +10,7 @@ import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import com.heavyplayer.audioplayerrecorder.R;
 import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 
@@ -18,6 +19,21 @@ public class AudioPlayerLayout extends ViewGroup {
 
 	private PlayPauseImageButton mButton;
 	private SeekBar mSeekBar;
+	private TextView mLengthTextView;
+
+	// Attributes.
+	private Integer mPlayResId;
+	private Integer mPauseResId;
+	private Integer mButtonWidth;
+	private Integer mButtonHeight;
+	private Integer mButtonBackgroundResId;
+	private Integer mSeekBarMarginLeft;
+	private Integer mSeekBarMarginRight;
+
+	private int mLengthCurrentPosition = -1;
+	private String mLengthCurrentPositionStr;
+	private int mLengthDuration = -1;
+	private String mLengthDurationStr;
 
 	public AudioPlayerLayout(Context context) {
 		super(context);
@@ -37,53 +53,141 @@ public class AudioPlayerLayout extends ViewGroup {
 	private void init(Context context, AttributeSet attrs) {
 		setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS); // Enhance compatibility with ListView.
 
-		// Default values.
-		int playResId = 0;
-		int pauseResId = 0;
-		int buttonWidth = ViewGroup.LayoutParams.WRAP_CONTENT;
-		int buttonHeight = ViewGroup.LayoutParams.WRAP_CONTENT;
-		int buttonBackgroundResId = 0;
-		int seekBarMarginLeftResId = R.dimen.apl_seek_bar_margin_left;
+		// Set time.
+		setLengthCurrentPosition(0);
+		setLengthDuration(0);
 
 		if(attrs != null) {
 			final TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.AudioPlayerLayout);
 			if(ta != null) {
 				try {
-					playResId = ta.getResourceId(R.styleable.AudioPlayerLayout_playSrc, playResId);
-					pauseResId = ta.getResourceId(R.styleable.AudioPlayerLayout_pauseSrc, pauseResId);
-					buttonWidth = ta.getDimensionPixelSize(R.styleable.AudioPlayerLayout_buttonWidth, buttonWidth);
-					buttonHeight = ta.getDimensionPixelSize(R.styleable.AudioPlayerLayout_buttonHeight, buttonHeight);
-					buttonBackgroundResId = ta.getResourceId(
-							R.styleable.AudioPlayerLayout_buttonBackground,
-							buttonBackgroundResId);
-					seekBarMarginLeftResId = ta.getResourceId(
-							R.styleable.AudioPlayerLayout_seekBarMarginLeft,
-							R.dimen.apl_seek_bar_margin_left);
+					mPlayResId = getResourceId(ta, R.styleable.AudioPlayerLayout_playSrc);
+					mPauseResId = getResourceId(ta, R.styleable.AudioPlayerLayout_pauseSrc);
+					mButtonWidth = getDimensionPixelSize(ta, R.styleable.AudioPlayerLayout_buttonWidth);
+					mButtonHeight = getDimensionPixelSize(ta, R.styleable.AudioPlayerLayout_buttonHeight);
+					mButtonBackgroundResId = getResourceId(ta, R.styleable.AudioPlayerLayout_buttonBackground);
+					mSeekBarMarginLeft = getDimensionPixelSize(ta, R.styleable.AudioPlayerLayout_seekBarMarginLeft);
+					mSeekBarMarginRight = getDimensionPixelSize(ta, R.styleable.AudioPlayerLayout_seekBarMarginRight);
 				} finally {
 					ta.recycle();
 				}
 			}
 		}
+	}
 
-		mButton = new PlayPauseImageButton(context);
-		if(playResId != 0)
-			mButton.setPlayDrawableResource(playResId);
-		if(pauseResId != 0)
-			mButton.setPauseDrawableResource(pauseResId);
-		mButton.setPadding(0, 0, 0, 0); // Remove image button padding, before setting the background.
-		if(buttonBackgroundResId != 0)
-			mButton.setBackgroundResource(buttonBackgroundResId);
-		final LayoutParams buttonParams = new LayoutParams(buttonWidth, buttonHeight);
+	private Integer getResourceId(TypedArray ta, int index) {
+		return ta.hasValue(index) ? ta.getResourceId(index, 0) : null;
+	}
 
-		mSeekBar = new SeekBar(context);
-		final MarginLayoutParams seekBarParams =
-				new MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-		final Resources resources = getResources();
-		if(resources != null)
-			seekBarParams.leftMargin = resources.getDimensionPixelSize(seekBarMarginLeftResId);
+	private Integer getDimensionPixelSize(TypedArray ta, int index) {
+		return ta.hasValue(index) ? ta.getDimensionPixelSize(index, 0) : null;
+	}
 
-		addView(mButton, buttonParams);
-		addView(mSeekBar, seekBarParams);
+	@Override
+	public void addView(View child, int index, LayoutParams params) {
+		final int id = child.getId();
+		switch(id) {
+			case android.R.id.button1:
+				if(!(child instanceof PlayPauseImageButton))
+					throw new IllegalStateException("View with id android.R.id.button1 must extend PlayPauseImageButton.");
+				mButton = (PlayPauseImageButton)child;
+
+				if(mButtonWidth != null || mButtonHeight != null) {
+					if(params == null)
+						params = new LayoutParams(
+								mButtonWidth != null ? mButtonWidth : LayoutParams.WRAP_CONTENT,
+								mButtonHeight!= null ? mButtonHeight : LayoutParams.WRAP_CONTENT);
+					else {
+						if(mButtonWidth != null)
+							params.width = mButtonWidth;
+						if(mButtonHeight != null)
+							params.height = mButtonHeight;
+					}
+				}
+
+				// Configure button.
+				if(mPlayResId != null)
+					mButton.setPlayDrawableResource(mPlayResId);
+				if(mPauseResId != null)
+					mButton.setPauseDrawableResource(mPauseResId);
+				if(mButtonBackgroundResId != null) {
+					mButton.setPadding(0, 0, 0, 0); // Remove image button padding, before setting the background.
+					mButton.setBackgroundResource(mButtonBackgroundResId);
+				}
+
+				break;
+
+			case android.R.id.progress:
+				if(!(child instanceof SeekBar))
+					throw new IllegalStateException("View with id android.R.id.progress must extend SeekBar.");
+				mSeekBar = (SeekBar)child;
+
+				// Configure seek bar layout params.
+				if(!(params instanceof MarginLayoutParams)) {
+					params = params == null ?
+							new MarginLayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT) :
+							new MarginLayoutParams(params);
+				}
+				if(mSeekBarMarginLeft != null)
+					((MarginLayoutParams)params).leftMargin = mSeekBarMarginLeft;
+				if(mSeekBarMarginRight != null)
+					((MarginLayoutParams)params).rightMargin = mSeekBarMarginRight;
+
+				break;
+
+			case android.R.id.text1:
+				if(!(child instanceof TextView))
+					throw new IllegalStateException("View with android.R.id.text1 must extend TextView.");
+				mLengthTextView = (TextView)child;
+				mLengthTextView.setFreezesText(true);
+				break;
+
+			default:
+				break;
+		}
+
+		super.addView(child, index, params);
+	}
+
+	@Override
+	protected void onFinishInflate() {
+		final Context context = getContext();
+
+		if(context != null) {
+			if(findViewById(android.R.id.button1) == null) {
+				final PlayPauseImageButton button = new PlayPauseImageButton(context);
+				button.setId(android.R.id.button1);
+				addView(button);
+			}
+
+			if(findViewById(android.R.id.progress) == null) {
+				final SeekBar seekBar = new SeekBar(context);
+				seekBar.setId(android.R.id.progress);
+
+
+				final MarginLayoutParams seekBarParams =
+						new MarginLayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+				final Resources resources = getResources();
+				// Default margins.
+				if(resources != null) {
+					seekBarParams.leftMargin = resources.getDimensionPixelSize(R.dimen.apl_seek_bar_margin_left);
+					seekBarParams.rightMargin = resources.getDimensionPixelSize(R.dimen.apl_seek_bar_margin_right);
+				}
+
+				addView(seekBar, seekBarParams);
+			}
+
+			if(findViewById(android.R.id.text1) == null) {
+				final TextView textView = new TextView(context);
+				textView.setId(android.R.id.text1);
+				addView(textView);
+			}
+		}
+
+		// Make sure the length is initialized.
+		updateLength();
+
+		super.onFinishInflate();
 	}
 
 	public PlayPauseImageButton getButton() {
@@ -99,16 +203,31 @@ public class AudioPlayerLayout extends ViewGroup {
 		// Measure button.
 		measureChild(mButton, widthMeasureSpec, heightMeasureSpec);
 
+		// Measure length text view.
+		measureChild(mLengthTextView, widthMeasureSpec, heightMeasureSpec);
+
 		// Measure seek bar.
-		final int remainingWidth = MeasureSpec.getSize(widthMeasureSpec) - mButton.getMeasuredWidth();
+		final int remainingWidth =
+				MeasureSpec.getSize(widthMeasureSpec) -
+				mButton.getMeasuredWidth() -
+				mLengthTextView.getMeasuredWidth();
+
 		final int remainingWidthMeasureSpec = MeasureSpec.makeMeasureSpec(remainingWidth, MeasureSpec.EXACTLY);
 		measureChildWithMargins(mSeekBar, remainingWidthMeasureSpec, 0, heightMeasureSpec, 0);
 
 		// Calculate max width and height, taking padding into account.
-		final int measuredWidth = mButton.getMeasuredWidth() + mSeekBar.getMeasuredWidth()
-				+ getPaddingLeft() + getPaddingRight();
-		final int measuredHeight = Math.max(mButton.getMeasuredHeight(), mSeekBar.getMeasuredHeight())
-				+ getPaddingTop() + getPaddingBottom();
+
+		final int measuredWidth =
+				mButton.getMeasuredWidth() +
+				mSeekBar.getMeasuredWidth() +
+				mLengthTextView.getMeasuredWidth() +
+				getPaddingLeft() + getPaddingRight();
+
+		final int measuredHeight =
+				Math.max(
+					Math.max(mButton.getMeasuredHeight(), mSeekBar.getMeasuredHeight()),
+					mLengthTextView.getMeasuredHeight()) +
+				getPaddingTop() + getPaddingBottom();
 
 		setMeasuredDimension(
 				resolveSize(measuredWidth, widthMeasureSpec),
@@ -123,9 +242,14 @@ public class AudioPlayerLayout extends ViewGroup {
 
 		// Layout seek bar.
 		final MarginLayoutParams seekBarParams = (MarginLayoutParams)mSeekBar.getLayoutParams();
-		final int seekBarLeftMargin = seekBarParams != null ? seekBarParams.leftMargin : 0;
-		left += mButton.getMeasuredWidth() + seekBarLeftMargin;
+		final int seekBarMarginLeft = seekBarParams != null ? seekBarParams.leftMargin : 0;
+		final int seekBarMarginRight = seekBarParams != null ? seekBarParams.rightMargin : 0;
+		left += mButton.getMeasuredWidth() + seekBarMarginLeft;
 		layoutChild(mSeekBar, left, t, b);
+
+		// Layout length text view.
+		left += mSeekBar.getMeasuredWidth() + seekBarMarginRight;
+		layoutChild(mLengthTextView, left, t, b);
 	}
 
 	protected void layoutChild(View child, int l, int t, int b) {
@@ -133,6 +257,53 @@ public class AudioPlayerLayout extends ViewGroup {
 		final int measuredHeight = child.getMeasuredHeight();
 		final int nt = (int)((height - measuredHeight) / 2 + .5f);
 		child.layout(l, nt, l + child.getMeasuredWidth(), nt + measuredHeight);
+	}
+
+	public void setLength(int currentPosition, int duration) {
+		setLengthCurrentPosition(currentPosition, false);
+		setLengthDuration(duration, false);
+		updateLength();
+	}
+
+	public void setLengthCurrentPosition(int currentPosition) {
+		setLengthCurrentPosition(currentPosition, true);
+	}
+	protected void setLengthCurrentPosition(int currentPosition, boolean update) {
+		if(mLengthCurrentPosition != currentPosition) {
+			mLengthCurrentPosition = currentPosition;
+			mLengthCurrentPositionStr = millisToTimeString(mLengthCurrentPosition);
+
+			if(update)
+				updateLength();
+		}
+	}
+
+	public void setLengthDuration(int duration) {
+		setLengthDuration(duration, true);
+	}
+	protected void setLengthDuration(int duration, boolean update) {
+		if(mLengthDuration != duration) {
+			mLengthDuration = duration;
+			mLengthDurationStr = millisToTimeString(mLengthDuration);
+
+			if(update)
+				updateLength();
+		}
+	}
+
+	private void updateLength() {
+		if(mLengthTextView != null)
+			mLengthTextView.setText(String.format("%s / %s", mLengthCurrentPositionStr, mLengthDurationStr));
+	}
+
+	private String millisToTimeString(long millis) {
+		final long seconds = (millis / 1000) % 60 ;
+		final long minutes = ((millis / (1000*60)) % 60);
+		final long hours = ((millis / (1000*60*60)) % 24);
+
+		return hours > 0 ?
+				String.format("%02d:%02d:%02d", hours, minutes, seconds) :
+				String.format("%02d:%02d", minutes, seconds);
 	}
 
 	@Override
@@ -170,6 +341,8 @@ public class AudioPlayerLayout extends ViewGroup {
 		final SavedState ss = new SavedState(super.onSaveInstanceState());
 		ss.buttonSavedState = mButton.onSaveInstanceState();
 		ss.seekBarSavedState = mSeekBar.onSaveInstanceState();
+		ss.lengthCurrentPosition = mLengthCurrentPosition;
+		ss.lengthDuration = mLengthDuration;
 		return ss;
 	}
 
@@ -184,16 +357,22 @@ public class AudioPlayerLayout extends ViewGroup {
 		super.onRestoreInstanceState(ss.getSuperState());
 		mButton.onRestoreInstanceState(ss.buttonSavedState);
 		mSeekBar.onRestoreInstanceState(ss.seekBarSavedState);
+		// Update length.
+		setLength(ss.lengthCurrentPosition, ss.lengthDuration);
 	}
 
 	static class SavedState extends BaseSavedState {
 		Parcelable buttonSavedState;
 		Parcelable seekBarSavedState;
+		int lengthCurrentPosition;
+		int lengthDuration;
 
 		public SavedState(Parcel source) {
 			super(source);
 			buttonSavedState = source.readParcelable(SavedState.class.getClassLoader());
 			seekBarSavedState = source.readParcelable(SavedState.class.getClassLoader());
+			lengthCurrentPosition = source.readInt();
+			lengthDuration = source.readInt();
 		}
 
 		@Override
@@ -201,6 +380,8 @@ public class AudioPlayerLayout extends ViewGroup {
 			super.writeToParcel(dest, flags);
 			dest.writeParcelable(buttonSavedState, 0);
 			dest.writeParcelable(seekBarSavedState, 0);
+			dest.writeInt(lengthCurrentPosition);
+			dest.writeInt(lengthDuration);
 		}
 
 		public SavedState(Parcelable superState) {

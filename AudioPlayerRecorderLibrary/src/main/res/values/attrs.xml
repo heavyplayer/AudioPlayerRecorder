@@ -15,7 +15,8 @@
 		<attr name="buttonWidth" format="dimension"/>
 		<attr name="buttonHeight" format="dimension"/>
 		<attr name="buttonBackground" format="reference"/>
-		<attr name="seekBarMarginLeft" format="reference"/>
+		<attr name="seekBarMarginLeft" format="dimension"/>
+		<attr name="seekBarMarginRight" format="dimension"/>
 	</declare-styleable>
 
 </resources>

@@ -12,7 +12,6 @@ import com.heavyplayer.audioplayerrecorder.R;
 
 public class PlayPauseImageButton extends ImageButton implements View.OnClickListener {
 	private boolean mIsPlaying;
-	private boolean mAutoChangeState;
 
 	private int mPlayResId;
 	private int mPauseResId;
@@ -40,7 +39,6 @@ public class PlayPauseImageButton extends ImageButton implements View.OnClickLis
 
 	private void init(Context context, AttributeSet attrs) {
 		mIsPlaying = false;
-		mAutoChangeState = true;
 
 		mPlayResId = R.drawable.ic_av_play;
 		mPauseResId = R.drawable.ic_av_pause;
@@ -99,17 +97,17 @@ public class PlayPauseImageButton extends ImageButton implements View.OnClickLis
 		final Drawable drawable;
 
 		if(mIsPlaying) {
-			if(mPauseDrawable == null)
+			if(mPauseDrawable == null && getResources() != null)
 				mPauseDrawable = getResources().getDrawable(mPauseResId);
 			drawable = mPauseDrawable;
 		}
 		else {
-			if(mPlayDrawable == null)
+			if(mPlayDrawable == null && getResources() != null)
 				mPlayDrawable = getResources().getDrawable(mPlayResId);
 			drawable = mPlayDrawable;
 		}
 
-		if(drawable != getDrawable())
+		if(drawable != null && drawable != getDrawable())
 			setImageDrawable(drawable);
 	}
 
@@ -184,7 +182,7 @@ public class PlayPauseImageButton extends ImageButton implements View.OnClickLis
 		};
 	}
 
-	public interface OnPlayPauseListener {
+	public static interface OnPlayPauseListener {
 		public void onPlay(View v);
 		public void onPause(View v);
 	}

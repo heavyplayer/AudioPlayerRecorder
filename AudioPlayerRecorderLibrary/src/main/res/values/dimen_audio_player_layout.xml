@@ -2,5 +2,6 @@
 <resources>
 
 	<dimen name="apl_seek_bar_margin_left">4dip</dimen>
+	<dimen name="apl_seek_bar_margin_right">4dip</dimen>
 
 </resources>

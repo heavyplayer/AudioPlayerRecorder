@@ -96,6 +96,9 @@ public class AudioPlayerHandler implements
 
 	@Override
 	public void onStart(MediaPlayer mp) {
+		if(mView != null)
+			mView.setLengthDuration(mp.getDuration());
+
 		if(mSeekBar != null) {
 			if(mSeekBar.getMax() != mp.getDuration()) {
 				mSeekBar.setMax(mp.getDuration());
@@ -141,6 +144,11 @@ public class AudioPlayerHandler implements
 			}
 		});
 
+		// Resume duration.
+		// Don't worry about current position as it will
+		// always be correlated with the seek bar position.
+		mView.setLengthDuration(mMediaPlayer.getDuration());
+
 		registerButton(view.getButton());
 
 		registerSeekBar(view.getSeekBar());
@@ -184,7 +192,9 @@ public class AudioPlayerHandler implements
 			}
 
 			@Override
-			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) { /* Do nothing */ }
+			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+				mView.setLengthCurrentPosition(progress);
+			}
 		});
 
 		// Resume progress.
