@@ -57,10 +57,10 @@ public class AudioPlayerService extends Service {
 	}
 
 	public class LocalBinder extends Binder {
-		public void register(long id, Uri fileUri, AudioPlayerLayout view) {
+		public void register(long id, Uri fileUri, boolean showBufferIfPossible, AudioPlayerLayout view) {
 			AudioPlayerHandler player = mPlayers.get(id);
 			if(player == null) {
-				player = new AudioPlayerHandler(AudioPlayerService.this, fileUri, mHandler);
+				player = new AudioPlayerHandler(AudioPlayerService.this, fileUri, showBufferIfPossible, mHandler);
 				mPlayers.put(id, player);
 			}
 

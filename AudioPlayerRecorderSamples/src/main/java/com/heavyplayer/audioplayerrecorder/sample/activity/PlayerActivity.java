@@ -74,6 +74,7 @@ public class PlayerActivity extends RecorderActivity {
 					binder.register(
 							item.getId(),
 							generateExternalStorageFileUri(item.getFileName()),
+							true,
 							audioPlayerLayout);
 				}
 			}

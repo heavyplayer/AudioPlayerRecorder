@@ -2,13 +2,18 @@ package com.heavyplayer.audioplayerrecorder.util;
 
 import android.media.MediaPlayer;
 
-public class SafeMediaPlayer extends MediaPlayer
-		implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
+public class SafeMediaPlayer extends MediaPlayer implements
+		MediaPlayer.OnPreparedListener,
+		MediaPlayer.OnCompletionListener,
+		MediaPlayer.OnBufferingUpdateListener,
+		MediaPlayer.OnErrorListener {
+
 	private final static int CURRENT_POSITION_MIN_PROGRESS = 128;
 
 	private OnPreparedListener mOnPreparedListener;
 	private OnStartListener mOnStartListener;
 	private OnCompletionListener mOnCompletionListener;
+	private OnBufferingUpdateListener mOnBufferingUpdateListener;
 	private OnErrorListener mOnErrorListener;
 
 	private State mState;
@@ -31,6 +36,7 @@ public class SafeMediaPlayer extends MediaPlayer
 
 		super.setOnPreparedListener(this);
 		super.setOnCompletionListener(this);
+		super.setOnBufferingUpdateListener(this);
 		super.setOnErrorListener(this);
 	}
 
@@ -46,6 +52,11 @@ public class SafeMediaPlayer extends MediaPlayer
 	@Override
 	public void setOnCompletionListener(OnCompletionListener listener) {
 		mOnCompletionListener = listener;
+	}
+
+	@Override
+	public void setOnBufferingUpdateListener(OnBufferingUpdateListener listener) {
+		mOnBufferingUpdateListener = listener;
 	}
 
 	@Override
@@ -149,6 +160,9 @@ public class SafeMediaPlayer extends MediaPlayer
 		mLastCurrentPosition = null;
 		mDuration = 100;
 		mState = State.CREATED;
+
+		if(mOnBufferingUpdateListener != null)
+			mOnBufferingUpdateListener.onBufferingUpdate(this, 0);
 	}
 
 	@Override
@@ -160,6 +174,12 @@ public class SafeMediaPlayer extends MediaPlayer
 
 		if(mOnCompletionListener != null)
 			mOnCompletionListener.onCompletion(mp);
+	}
+
+	@Override
+	public void onBufferingUpdate(MediaPlayer mp, int percent) {
+		if(mOnBufferingUpdateListener != null)
+			mOnBufferingUpdateListener.onBufferingUpdate(mp, percent);
 	}
 
 	@Override

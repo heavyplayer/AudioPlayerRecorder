@@ -27,6 +27,8 @@ public class AudioPlayerHandler implements
 
 	private Uri mFileUri;
 
+	private boolean mShowBufferIfPossible;
+
 	private Handler mHandler;
 	private ProgressUpdater mProgressUpdater;
 
@@ -36,10 +38,14 @@ public class AudioPlayerHandler implements
 	private PlayPauseImageButton mButton;
 	private SeekBar mSeekBar;
 
-	public AudioPlayerHandler(Context context, Uri fileUri, Handler handler) {
+	private Integer mBufferingCurrentPosition;
+
+	public AudioPlayerHandler(Context context, Uri fileUri, boolean showBufferIfPossible, Handler handler) {
 		mAudioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
 
 		mFileUri = fileUri;
+
+		mShowBufferIfPossible = showBufferIfPossible;
 
 		mMediaPlayer = new SafeMediaPlayer();
 		mMediaPlayer.setOnStartListener(this);
@@ -91,7 +97,12 @@ public class AudioPlayerHandler implements
 
 	@Override
 	public void onBufferingUpdate(MediaPlayer mp, int percent) {
-		Log.i(TAG, "buffering percent: " + percent);
+		if(mShowBufferIfPossible) {
+			mBufferingCurrentPosition = (int)(mp.getDuration() * (percent / 100f));
+
+			if(mSeekBar != null)
+				mSeekBar.setSecondaryProgress(mBufferingCurrentPosition);
+		}
 	}
 
 	@Override
@@ -200,6 +211,7 @@ public class AudioPlayerHandler implements
 		// Resume progress.
 		mSeekBar.setMax(mMediaPlayer.getDuration());
 		mSeekBar.setProgress(mMediaPlayer.getCurrentPosition());
+		mSeekBar.setSecondaryProgress(mBufferingCurrentPosition != null ? mBufferingCurrentPosition : 0);
 	}
 
 	protected void clearView() {
