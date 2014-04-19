@@ -15,6 +15,10 @@ import com.heavyplayer.audioplayerrecorder.R;
 import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 
 public class AudioPlayerLayout extends ViewGroup {
+	private static final int SECOND_MILLIS = 1000;
+	private static final int MINUTE_MILLIS = 60 * SECOND_MILLIS;
+	private static final int HOUR_MILLIS = 60 * MINUTE_MILLIS;
+
 	public OnDetachListener mOnDetachListener;
 
 	private PlayPauseImageButton mButton;
@@ -54,8 +58,9 @@ public class AudioPlayerLayout extends ViewGroup {
 		setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS); // Enhance compatibility with ListView.
 
 		// Set time.
-		setLengthCurrentPosition(0);
-		setLengthDuration(0);
+		setLengthDuration(0, false);
+		setLengthCurrentPosition(0, false);
+		updateLength();
 
 		if(attrs != null) {
 			final TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.AudioPlayerLayout);
@@ -259,36 +264,35 @@ public class AudioPlayerLayout extends ViewGroup {
 		child.layout(l, nt, l + child.getMeasuredWidth(), nt + measuredHeight);
 	}
 
-	public void setLength(int currentPosition, int duration) {
-		setLengthCurrentPosition(currentPosition, false);
-		setLengthDuration(duration, false);
-		updateLength();
-	}
-
 	public void setLengthCurrentPosition(int currentPosition) {
-		setLengthCurrentPosition(currentPosition, true);
+		if(mLengthCurrentPosition != currentPosition)
+			setLengthCurrentPosition(currentPosition, true);
 	}
 	protected void setLengthCurrentPosition(int currentPosition, boolean update) {
-		if(mLengthCurrentPosition != currentPosition) {
-			mLengthCurrentPosition = currentPosition;
-			mLengthCurrentPositionStr = millisToTimeString(mLengthCurrentPosition);
+		mLengthCurrentPosition = currentPosition;
+		mLengthCurrentPositionStr = millisToTimeString(mLengthCurrentPosition);
 
-			if(update)
-				updateLength();
-		}
+		if(update)
+			updateLength();
 	}
 
 	public void setLengthDuration(int duration) {
-		setLengthDuration(duration, true);
+		if(mLengthDuration != duration)
+			setLengthDuration(duration, true);
 	}
 	protected void setLengthDuration(int duration, boolean update) {
-		if(mLengthDuration != duration) {
-			mLengthDuration = duration;
-			mLengthDurationStr = millisToTimeString(mLengthDuration);
+		// Update length current position if it needs to include or exclude hours
+		// depending on the duration.
+		final boolean updateCurrentPosition = includeHours(mLengthDuration) != includeHours(duration);
 
-			if(update)
-				updateLength();
-		}
+		mLengthDuration = duration;
+		mLengthDurationStr = millisToTimeString(mLengthDuration);
+
+		if(updateCurrentPosition)
+			setLengthCurrentPosition(mLengthCurrentPosition, false);
+
+		if(update)
+			updateLength();
 	}
 
 	private void updateLength() {
@@ -297,13 +301,17 @@ public class AudioPlayerLayout extends ViewGroup {
 	}
 
 	private String millisToTimeString(long millis) {
-		final long seconds = (millis / 1000) % 60 ;
-		final long minutes = ((millis / (1000*60)) % 60);
-		final long hours = ((millis / (1000*60*60)) % 24);
+		final long seconds = (millis / SECOND_MILLIS) % 60 ;
+		final long minutes = ((millis / MINUTE_MILLIS) % 60);
+		final long hours = ((millis / HOUR_MILLIS) % 24);
 
-		return hours > 0 ?
+		return includeHours(mLengthDuration) ?
 				String.format("%02d:%02d:%02d", hours, minutes, seconds) :
 				String.format("%02d:%02d", minutes, seconds);
+	}
+
+	private boolean includeHours(long millis) {
+		return millis >= HOUR_MILLIS;
 	}
 
 	@Override
@@ -358,7 +366,9 @@ public class AudioPlayerLayout extends ViewGroup {
 		mButton.onRestoreInstanceState(ss.buttonSavedState);
 		mSeekBar.onRestoreInstanceState(ss.seekBarSavedState);
 		// Update length.
-		setLength(ss.lengthCurrentPosition, ss.lengthDuration);
+		setLengthDuration(ss.lengthDuration, false);
+		setLengthCurrentPosition(ss.lengthCurrentPosition, false);
+		updateLength();
 	}
 
 	static class SavedState extends BaseSavedState {
