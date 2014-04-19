@@ -84,7 +84,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
 				// Start recording.
 				mRecorder.start();
-
+				
 				mIsRecording = true;
 
 				scheduleTimeLimitStopper();
@@ -107,20 +107,23 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 			if(mRecorder != null) {
 				try {
 					mRecorder.stop();
-					mRecorder.reset();
-
-					mIsRecording = false;
-
-					removeTimeLimitStopper();
-
-					updateMicrophoneState();
-
-					if(mStateListener != null)
-						mStateListener.onStopRecorder();
 				}
-				catch (Exception e) {
+				catch(Exception e) {
+					// This can happen, for instance, when stop is called immediately after start.
+					// We will act like if the stop was successful, since the recording is stopped nonetheless.
 					Log.w(TAG, e);
 				}
+
+				mRecorder.reset();
+
+				mIsRecording = false;
+
+				removeTimeLimitStopper();
+
+				updateMicrophoneState();
+
+				if(mStateListener != null)
+					mStateListener.onStopRecorder();
 			}
 
 			abandonAudioFocus();
