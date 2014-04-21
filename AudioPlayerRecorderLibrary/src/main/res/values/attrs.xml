@@ -17,6 +17,8 @@
 		<attr name="buttonBackground" format="reference"/>
 		<attr name="seekBarMarginLeft" format="dimension"/>
 		<attr name="seekBarMarginRight" format="dimension"/>
+		<attr name="timeDurationColor" format="color"/>
+		<attr name="timeCurrentPositionColor" format="color"/>
 	</declare-styleable>
 
 </resources>

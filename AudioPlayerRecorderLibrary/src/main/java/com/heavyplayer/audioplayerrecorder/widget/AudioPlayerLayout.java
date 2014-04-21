@@ -23,7 +23,8 @@ public class AudioPlayerLayout extends ViewGroup {
 
 	private PlayPauseImageButton mButton;
 	private SeekBar mSeekBar;
-	private TextView mLengthTextView;
+	private TextView mTimeCurrentPositionTextView;
+	private TextView mTimeDurationTextView;
 
 	// Attributes.
 	private Integer mPlayResId;
@@ -33,11 +34,12 @@ public class AudioPlayerLayout extends ViewGroup {
 	private Integer mButtonBackgroundResId;
 	private Integer mSeekBarMarginLeft;
 	private Integer mSeekBarMarginRight;
+	private Integer mTimeCurrentPositionColor;
+	private Integer mTimeDurationColor;
 
-	private int mLengthCurrentPosition = -1;
-	private String mLengthCurrentPositionStr;
-	private int mLengthDuration = -1;
-	private String mLengthDurationStr;
+	// Time variables.
+	private int mTimeCurrentPosition = -1;
+	private int mTimeDuration = -1;
 
 	public AudioPlayerLayout(Context context) {
 		super(context);
@@ -57,11 +59,6 @@ public class AudioPlayerLayout extends ViewGroup {
 	private void init(Context context, AttributeSet attrs) {
 		setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS); // Enhance compatibility with ListView.
 
-		// Set time.
-		setLengthDuration(0, false);
-		setLengthCurrentPosition(0, false);
-		updateLength();
-
 		if(attrs != null) {
 			final TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.AudioPlayerLayout);
 			if(ta != null) {
@@ -73,6 +70,8 @@ public class AudioPlayerLayout extends ViewGroup {
 					mButtonBackgroundResId = getResourceId(ta, R.styleable.AudioPlayerLayout_buttonBackground);
 					mSeekBarMarginLeft = getDimensionPixelSize(ta, R.styleable.AudioPlayerLayout_seekBarMarginLeft);
 					mSeekBarMarginRight = getDimensionPixelSize(ta, R.styleable.AudioPlayerLayout_seekBarMarginRight);
+					mTimeCurrentPositionColor = getColor(ta, R.styleable.AudioPlayerLayout_timeCurrentPositionColor);
+					mTimeDurationColor = getColor(ta, R.styleable.AudioPlayerLayout_timeDurationColor);
 				} finally {
 					ta.recycle();
 				}
@@ -86,6 +85,10 @@ public class AudioPlayerLayout extends ViewGroup {
 
 	private Integer getDimensionPixelSize(TypedArray ta, int index) {
 		return ta.hasValue(index) ? ta.getDimensionPixelSize(index, 0) : null;
+	}
+
+	private Integer getColor(TypedArray ta, int index) {
+		return ta.hasValue(index) ? ta.getColor(index, 0) : null;
 	}
 
 	@Override
@@ -143,8 +146,19 @@ public class AudioPlayerLayout extends ViewGroup {
 			case android.R.id.text1:
 				if(!(child instanceof TextView))
 					throw new IllegalStateException("View with android.R.id.text1 must extend TextView.");
-				mLengthTextView = (TextView)child;
-				mLengthTextView.setFreezesText(true);
+				mTimeCurrentPositionTextView = (TextView)child;
+				mTimeCurrentPositionTextView.setIncludeFontPadding(false);
+				if(mTimeCurrentPositionColor != null)
+					mTimeCurrentPositionTextView.setTextColor(mTimeCurrentPositionColor);
+				break;
+
+			case android.R.id.text2:
+				if(!(child instanceof TextView))
+					throw new IllegalStateException("View with android.R.id.text2 must extend TextView.");
+				mTimeDurationTextView = (TextView)child;
+				mTimeDurationTextView.setIncludeFontPadding(false);
+				if(mTimeDurationColor != null)
+					mTimeDurationTextView.setTextColor(mTimeDurationColor);
 				break;
 
 			default:
@@ -183,14 +197,21 @@ public class AudioPlayerLayout extends ViewGroup {
 			}
 
 			if(findViewById(android.R.id.text1) == null) {
-				final TextView textView = new TextView(context);
-				textView.setId(android.R.id.text1);
-				addView(textView);
+				final TextView currentPositionTextView = new TextView(context);
+				currentPositionTextView.setId(android.R.id.text1);
+				addView(currentPositionTextView);
+			}
+
+			if(findViewById(android.R.id.text2) == null) {
+				final TextView durationTextView = new TextView(context);
+				durationTextView.setId(android.R.id.text2);
+				addView(durationTextView);
 			}
 		}
 
-		// Make sure the length is initialized.
-		updateLength();
+		// Init time.
+		setTimeDuration(0);
+		setTimeCurrentPosition(0);
 
 		super.onFinishInflate();
 	}
@@ -208,14 +229,18 @@ public class AudioPlayerLayout extends ViewGroup {
 		// Measure button.
 		measureChild(mButton, widthMeasureSpec, heightMeasureSpec);
 
-		// Measure length text view.
-		measureChild(mLengthTextView, widthMeasureSpec, heightMeasureSpec);
+		// Measure current position text view.
+		measureChild(mTimeCurrentPositionTextView, widthMeasureSpec, heightMeasureSpec);
+
+		// Measure duration text view.
+		measureChild(mTimeDurationTextView, widthMeasureSpec, heightMeasureSpec);
 
 		// Measure seek bar.
 		final int remainingWidth =
 				MeasureSpec.getSize(widthMeasureSpec) -
 				mButton.getMeasuredWidth() -
-				mLengthTextView.getMeasuredWidth();
+				mTimeCurrentPositionTextView.getMeasuredWidth() -
+				mTimeDurationTextView.getMeasuredWidth();
 
 		final int remainingWidthMeasureSpec = MeasureSpec.makeMeasureSpec(remainingWidth, MeasureSpec.EXACTLY);
 		measureChildWithMargins(mSeekBar, remainingWidthMeasureSpec, 0, heightMeasureSpec, 0);
@@ -225,13 +250,14 @@ public class AudioPlayerLayout extends ViewGroup {
 		final int measuredWidth =
 				mButton.getMeasuredWidth() +
 				mSeekBar.getMeasuredWidth() +
-				mLengthTextView.getMeasuredWidth() +
+				mTimeCurrentPositionTextView.getMeasuredWidth() +
+				mTimeDurationTextView.getMeasuredWidth() +
 				getPaddingLeft() + getPaddingRight();
 
 		final int measuredHeight =
 				Math.max(
 					Math.max(mButton.getMeasuredHeight(), mSeekBar.getMeasuredHeight()),
-					mLengthTextView.getMeasuredHeight()) +
+					Math.max(mTimeCurrentPositionTextView.getMeasuredHeight(), mTimeDurationTextView.getMeasuredHeight())) +
 				getPaddingTop() + getPaddingBottom();
 
 		setMeasuredDimension(
@@ -252,9 +278,13 @@ public class AudioPlayerLayout extends ViewGroup {
 		left += mButton.getMeasuredWidth() + seekBarMarginLeft;
 		layoutChild(mSeekBar, left, t, b);
 
-		// Layout length text view.
+		// Layout current position text view.
 		left += mSeekBar.getMeasuredWidth() + seekBarMarginRight;
-		layoutChild(mLengthTextView, left, t, b);
+		layoutChild(mTimeCurrentPositionTextView, left, t, b);
+
+		// Layout current position text view.
+		left += mTimeCurrentPositionTextView.getMeasuredWidth();
+		layoutChild(mTimeDurationTextView, left, t, b);
 	}
 
 	protected void layoutChild(View child, int l, int t, int b) {
@@ -264,40 +294,31 @@ public class AudioPlayerLayout extends ViewGroup {
 		child.layout(l, nt, l + child.getMeasuredWidth(), nt + measuredHeight);
 	}
 
-	public void setLengthCurrentPosition(int currentPosition) {
-		if(mLengthCurrentPosition != currentPosition)
-			setLengthCurrentPosition(currentPosition, true);
-	}
-	protected void setLengthCurrentPosition(int currentPosition, boolean update) {
-		mLengthCurrentPosition = currentPosition;
-		mLengthCurrentPositionStr = millisToTimeString(mLengthCurrentPosition);
+	public void setTimeCurrentPosition(int currentPosition) {
+		if(mTimeCurrentPosition != currentPosition) {
+			mTimeCurrentPosition = currentPosition;
 
-		if(update)
-			updateLength();
+			if(mTimeCurrentPositionTextView != null)
+				mTimeCurrentPositionTextView.setText(millisToTimeString(mTimeCurrentPosition));
+		}
 	}
 
-	public void setLengthDuration(int duration) {
-		if(mLengthDuration != duration)
-			setLengthDuration(duration, true);
-	}
-	protected void setLengthDuration(int duration, boolean update) {
-		// Update length current position if it needs to include or exclude hours
-		// depending on the duration.
-		final boolean updateCurrentPosition = includeHours(mLengthDuration) != includeHours(duration);
+	public void setTimeDuration(int duration) {
+		if(mTimeDuration != duration) {
+			// Update length current position if it needs to include or exclude hours
+			// depending on the duration.
+			final boolean updateCurrentPosition = hasHours(mTimeDuration) != hasHours(duration);
 
-		mLengthDuration = duration;
-		mLengthDurationStr = millisToTimeString(mLengthDuration);
+			// Update time duration before updating current position.
+			// It is used to include or exclude hours.
+			mTimeDuration = duration;
 
-		if(updateCurrentPosition)
-			setLengthCurrentPosition(mLengthCurrentPosition, false);
+			if(updateCurrentPosition)
+				setTimeCurrentPosition(mTimeCurrentPosition);
 
-		if(update)
-			updateLength();
-	}
-
-	private void updateLength() {
-		if(mLengthTextView != null)
-			mLengthTextView.setText(String.format("%s / %s", mLengthCurrentPositionStr, mLengthDurationStr));
+			if(mTimeDurationTextView != null)
+				mTimeDurationTextView.setText(String.format(" / %s", millisToTimeString(mTimeDuration)));
+		}
 	}
 
 	private String millisToTimeString(long millis) {
@@ -305,12 +326,12 @@ public class AudioPlayerLayout extends ViewGroup {
 		final long minutes = ((millis / MINUTE_MILLIS) % 60);
 		final long hours = ((millis / HOUR_MILLIS) % 24);
 
-		return includeHours(mLengthDuration) ?
+		return hasHours(mTimeDuration) ?
 				String.format("%02d:%02d:%02d", hours, minutes, seconds) :
 				String.format("%02d:%02d", minutes, seconds);
 	}
 
-	private boolean includeHours(long millis) {
+	private boolean hasHours(long millis) {
 		return millis >= HOUR_MILLIS;
 	}
 
@@ -349,8 +370,8 @@ public class AudioPlayerLayout extends ViewGroup {
 		final SavedState ss = new SavedState(super.onSaveInstanceState());
 		ss.buttonSavedState = mButton.onSaveInstanceState();
 		ss.seekBarSavedState = mSeekBar.onSaveInstanceState();
-		ss.lengthCurrentPosition = mLengthCurrentPosition;
-		ss.lengthDuration = mLengthDuration;
+		ss.timeCurrentPosition = mTimeCurrentPosition;
+		ss.timeDuration = mTimeDuration;
 		return ss;
 	}
 
@@ -365,24 +386,23 @@ public class AudioPlayerLayout extends ViewGroup {
 		super.onRestoreInstanceState(ss.getSuperState());
 		mButton.onRestoreInstanceState(ss.buttonSavedState);
 		mSeekBar.onRestoreInstanceState(ss.seekBarSavedState);
-		// Update length.
-		setLengthDuration(ss.lengthDuration, false);
-		setLengthCurrentPosition(ss.lengthCurrentPosition, false);
-		updateLength();
+		// Update time.
+		setTimeDuration(ss.timeDuration);
+		setTimeCurrentPosition(ss.timeCurrentPosition);
 	}
 
 	static class SavedState extends BaseSavedState {
 		Parcelable buttonSavedState;
 		Parcelable seekBarSavedState;
-		int lengthCurrentPosition;
-		int lengthDuration;
+		int timeCurrentPosition;
+		int timeDuration;
 
 		public SavedState(Parcel source) {
 			super(source);
 			buttonSavedState = source.readParcelable(SavedState.class.getClassLoader());
 			seekBarSavedState = source.readParcelable(SavedState.class.getClassLoader());
-			lengthCurrentPosition = source.readInt();
-			lengthDuration = source.readInt();
+			timeCurrentPosition = source.readInt();
+			timeDuration = source.readInt();
 		}
 
 		@Override
@@ -390,8 +410,8 @@ public class AudioPlayerLayout extends ViewGroup {
 			super.writeToParcel(dest, flags);
 			dest.writeParcelable(buttonSavedState, 0);
 			dest.writeParcelable(seekBarSavedState, 0);
-			dest.writeInt(lengthCurrentPosition);
-			dest.writeInt(lengthDuration);
+			dest.writeInt(timeCurrentPosition);
+			dest.writeInt(timeDuration);
 		}
 
 		public SavedState(Parcelable superState) {
