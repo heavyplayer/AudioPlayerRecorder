@@ -1,5 +1,6 @@
 package com.heavyplayer.audioplayerrecorder.service;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -56,6 +57,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 		return START_STICKY;
 	}
 
+	@SuppressLint("InlinedApi")
 	protected void start(Uri fileUri) {
 		// If the output file changes, we want to stop the current recording.
 		if(mFileUri == null || !mFileUri.equals(fileUri)) {
@@ -74,11 +76,12 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 				mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
 				mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
 				mRecorder.setOutputFile(mFileUri.getPath());
-				mRecorder.setAudioEncoder(Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD_MR1 ?
-						MediaRecorder.AudioEncoder.DEFAULT :
-						MediaRecorder.AudioEncoder.AAC);
+				mRecorder.setAudioEncoder(Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1 ?
+						MediaRecorder.AudioEncoder.AAC
+						: 3); /* MediaRecorder.AudioEncoder.AAC was hidden in previous versions, but it's 3. */
 				mRecorder.setAudioChannels(1);
-				mRecorder.setAudioEncodingBitRate(22050);
+				mRecorder.setAudioSamplingRate(22050);
+				mRecorder.setAudioEncodingBitRate(65536);
 
 				mRecorder.prepare();
 
