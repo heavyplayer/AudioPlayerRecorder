@@ -9,6 +9,8 @@ import android.os.IBinder;
 import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowManager;
+
 import com.heavyplayer.audioplayerrecorder.R;
 import com.heavyplayer.audioplayerrecorder.service.AudioRecorderService;
 import com.heavyplayer.audioplayerrecorder.service.manager.AudioRecorderServiceManager;
@@ -130,12 +132,16 @@ public class AudioRecorderFragment extends DialogFragment
 
 	@Override
 	public void onStartRecorder() {
-		// Purposely empty.
+		Activity activity = getActivity();
+		if(activity != null)
+			activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 	}
 
 	@Override
 	public void onStopRecorder() {
-		// Purposely empty.
+		Activity activity = getActivity();
+		if(activity != null)
+			activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 	}
 
 	@Override
