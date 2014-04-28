@@ -12,6 +12,18 @@ public class AudioPlayerServiceManager extends ServiceManager {
 		super(activity, serviceClass);
 	}
 
+	@Override
+	protected void onDeactivateService(boolean stopService) {
+		if(stopService) {
+			final AudioPlayerService.LocalBinder binder = getBinder();
+			if(binder != null)
+				// Make sure the players are destroyed.
+				binder.destroyPlayers();
+		}
+
+		super.onDeactivateService(stopService);
+	}
+
 	public AudioPlayerService.LocalBinder getBinder() {
 		return (AudioPlayerService.LocalBinder)super.getBinder();
 	}

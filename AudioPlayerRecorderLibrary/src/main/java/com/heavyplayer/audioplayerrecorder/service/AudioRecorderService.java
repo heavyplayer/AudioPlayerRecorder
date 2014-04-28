@@ -133,14 +133,18 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 		}
 	}
 
-
-	@Override
-	public void onDestroy() {
+	protected void destroy() {
 		stop();
+
 		if(mRecorder != null) {
 			mRecorder.release();
 			mRecorder = null;
 		}
+	}
+
+	@Override
+	public void onDestroy() {
+		destroy();
 
 		if(BuildUtils.isDebug(this))
 			Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
@@ -264,6 +268,10 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
 		public void stopRecorder() {
 			stop();
+		}
+
+		public void destroyRecorder() {
+			destroy();
 		}
 
 		public boolean isRecording() {

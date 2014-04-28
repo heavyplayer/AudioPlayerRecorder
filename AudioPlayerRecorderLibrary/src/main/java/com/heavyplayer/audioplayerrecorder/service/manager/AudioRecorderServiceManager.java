@@ -14,7 +14,7 @@ public class AudioRecorderServiceManager extends ServiceManager {
 			final AudioRecorderService.LocalBinder binder = getBinder();
 			if(binder != null)
 				// Force recorder stop, to make sure the output file is ready to be read.
-				binder.stopRecorder();
+				binder.destroyRecorder();
 		}
 
 		super.onDeactivateService(stopService);

@@ -13,6 +13,7 @@ import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
 import com.heavyplayer.audioplayerrecorder.widget.AudioPlayerLayout;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class AudioPlayerService extends Service {
@@ -42,13 +43,21 @@ public class AudioPlayerService extends Service {
 		return START_STICKY;
 	}
 
+	public void destroy() {
+		final Iterator<AudioPlayerHandler> it = mPlayers.values().iterator();
+		while(it.hasNext()) {
+			final AudioPlayerHandler player = it.next();
+			player.destroy();
+			it.remove();
+		}
+	}
+
 	@Override
 	public void onDestroy() {
+		destroy();
+
 		if(BuildUtils.isDebug(this))
 			Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
-
-		for(AudioPlayerHandler player : mPlayers.values())
-			player.destroy();
 	}
 
 	@Override
@@ -65,6 +74,10 @@ public class AudioPlayerService extends Service {
 			}
 
 			player.registerView(view);
+		}
+
+		public void destroyPlayers() {
+			destroy();
 		}
 	}
 }
