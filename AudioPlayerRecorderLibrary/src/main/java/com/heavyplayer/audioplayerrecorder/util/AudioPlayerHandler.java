@@ -15,9 +15,10 @@ import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 import java.io.IOException;
 
 public class AudioPlayerHandler implements
-		MediaPlayer.OnBufferingUpdateListener,
+		SafeMediaPlayer.OnStartListener,
 		MediaPlayer.OnCompletionListener,
-		SafeMediaPlayer.OnStartListener {
+		MediaPlayer.OnBufferingUpdateListener,
+		MediaPlayer.OnErrorListener {
 	public static final String TAG = AudioPlayerHandler.class.getSimpleName();
 
 	private final static long PROGRESS_UPDATE_INTERVAL_MS = 200;
@@ -47,13 +48,43 @@ public class AudioPlayerHandler implements
 
 		mShowBufferIfPossible = showBufferIfPossible;
 
+		mHandler = handler;
+		mProgressUpdater = new ProgressUpdater();
+
+		createMediaPlayer();
+	}
+
+	protected void createMediaPlayer() {
 		mMediaPlayer = new SafeMediaPlayer();
 		mMediaPlayer.setOnStartListener(this);
 		mMediaPlayer.setOnCompletionListener(this);
 		mMediaPlayer.setOnBufferingUpdateListener(this);
+		mMediaPlayer.setOnErrorListener(this);
+	}
 
-		mHandler = handler;
-		mProgressUpdater = new ProgressUpdater();
+	public void destroy() {
+		destroyMediaPlayer();
+		abandonAudioFocus();
+	}
+
+	protected void destroyMediaPlayer() {
+		if(mMediaPlayer != null) {
+			try {
+				mMediaPlayer.setOnStartListener(null);
+				mMediaPlayer.setOnCompletionListener(null);
+				mMediaPlayer.setOnBufferingUpdateListener(null);
+				mMediaPlayer.setOnErrorListener(null);
+				mMediaPlayer.stop();
+				mMediaPlayer.reset();
+				mMediaPlayer.release();
+				mMediaPlayer = null;
+			}
+			catch(Exception e) {
+				Log.w(TAG, e);
+			}
+		}
+
+		mBufferingCurrentPosition = null;
 	}
 
 	protected void start(boolean gainAudioFocus, boolean updateButton) {
@@ -83,7 +114,6 @@ public class AudioPlayerHandler implements
 
 		if(abandonAudioFocus)
 			abandonAudioFocus();
-
 	}
 
 	protected void seekTo(int msec) {
@@ -93,16 +123,6 @@ public class AudioPlayerHandler implements
 	protected void updateButton(boolean isPlaying) {
 		if(mButton != null)
 			mButton.setIsPlaying(isPlaying);
-	}
-
-	@Override
-	public void onBufferingUpdate(MediaPlayer mp, int percent) {
-		if(mShowBufferIfPossible) {
-			mBufferingCurrentPosition = (int)(mp.getDuration() * (percent / 100f));
-
-			if(mSeekBar != null)
-				mSeekBar.setSecondaryProgress(mBufferingCurrentPosition);
-		}
 	}
 
 	@Override
@@ -139,6 +159,34 @@ public class AudioPlayerHandler implements
 		updateButton(false);
 
 		abandonAudioFocus();
+	}
+
+	@Override
+	public void onBufferingUpdate(MediaPlayer mp, int percent) {
+		if(mShowBufferIfPossible) {
+			mBufferingCurrentPosition = (int)(mp.getDuration() * (percent / 100f));
+
+			if(mSeekBar != null)
+				mSeekBar.setSecondaryProgress(mBufferingCurrentPosition);
+		}
+	}
+
+	@Override
+	public boolean onError(MediaPlayer mp, int what, int extra) {
+		if(what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
+			// Recreate media player.
+
+			destroyMediaPlayer();
+
+			createMediaPlayer();
+
+			if(mView != null)
+				registerView(mView);
+		}
+
+		abandonAudioFocus();
+
+		return false;
 	}
 
 	public void registerView(AudioPlayerLayout view) {
@@ -223,26 +271,6 @@ public class AudioPlayerHandler implements
 
 		mSeekBar.setOnSeekBarChangeListener(null);
 		mSeekBar = null;
-	}
-
-	public void destroy() {
-		destroyMediaPlayer();
-		abandonAudioFocus();
-	}
-
-	protected void destroyMediaPlayer() {
-		try {
-			mMediaPlayer.setOnBufferingUpdateListener(null);
-			mMediaPlayer.setOnCompletionListener(null);
-			mMediaPlayer.setOnStartListener(null);
-			mMediaPlayer.stop();
-			mMediaPlayer.reset();
-			mMediaPlayer.release();
-			mMediaPlayer = null;
-		}
-		catch(Exception e) {
-			Log.w(TAG, e);
-		}
 	}
 
 	protected void gainAudioFocus() {
