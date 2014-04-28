@@ -15,6 +15,7 @@ import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 import java.io.IOException;
 
 public class AudioPlayerHandler implements
+		MediaPlayer.OnPreparedListener,
 		SafeMediaPlayer.OnStartListener,
 		MediaPlayer.OnCompletionListener,
 		MediaPlayer.OnBufferingUpdateListener,
@@ -55,6 +56,7 @@ public class AudioPlayerHandler implements
 
 	protected void create() {
 		mMediaPlayer = new SafeMediaPlayer();
+		mMediaPlayer.setOnPreparedListener(this);
 		mMediaPlayer.setOnStartListener(this);
 		mMediaPlayer.setOnCompletionListener(this);
 		mMediaPlayer.setOnBufferingUpdateListener(this);
@@ -68,6 +70,7 @@ public class AudioPlayerHandler implements
 	public void destroy() {
 		if(mMediaPlayer != null) {
 			try {
+				mMediaPlayer.setOnPreparedListener(null);
 				mMediaPlayer.setOnStartListener(null);
 				mMediaPlayer.setOnCompletionListener(null);
 				mMediaPlayer.setOnBufferingUpdateListener(null);
@@ -126,7 +129,7 @@ public class AudioPlayerHandler implements
 	}
 
 	@Override
-	public void onStart(MediaPlayer mp) {
+	public void onPrepared(MediaPlayer mp) {
 		if(mView != null)
 			mView.setTimeDuration(mp.getDuration());
 
@@ -139,7 +142,10 @@ public class AudioPlayerHandler implements
 				mSeekBar.setProgress(mp.getCurrentPosition());
 			}
 		}
+	}
 
+	@Override
+	public void onStart(MediaPlayer mp) {
 		// Update seek bar.
 		startSeekBarUpdate();
 	}
