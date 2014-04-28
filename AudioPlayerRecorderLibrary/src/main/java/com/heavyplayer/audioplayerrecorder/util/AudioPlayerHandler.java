@@ -34,12 +34,11 @@ public class AudioPlayerHandler implements
 	private ProgressUpdater mProgressUpdater;
 
 	private SafeMediaPlayer mMediaPlayer;
+	private Integer mBufferingCurrentPosition;
 
 	private AudioPlayerLayout mView;
 	private PlayPauseImageButton mButton;
 	private SeekBar mSeekBar;
-
-	private Integer mBufferingCurrentPosition;
 
 	public AudioPlayerHandler(Context context, Uri fileUri, boolean showBufferIfPossible, Handler handler) {
 		mAudioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
@@ -51,23 +50,22 @@ public class AudioPlayerHandler implements
 		mHandler = handler;
 		mProgressUpdater = new ProgressUpdater();
 
-		createMediaPlayer();
+		create();
 	}
 
-	protected void createMediaPlayer() {
+	protected void create() {
 		mMediaPlayer = new SafeMediaPlayer();
 		mMediaPlayer.setOnStartListener(this);
 		mMediaPlayer.setOnCompletionListener(this);
 		mMediaPlayer.setOnBufferingUpdateListener(this);
 		mMediaPlayer.setOnErrorListener(this);
+
+		mBufferingCurrentPosition = null;
+
+		configureRegisteredViews();
 	}
 
 	public void destroy() {
-		destroyMediaPlayer();
-		abandonAudioFocus();
-	}
-
-	protected void destroyMediaPlayer() {
 		if(mMediaPlayer != null) {
 			try {
 				mMediaPlayer.setOnStartListener(null);
@@ -85,6 +83,8 @@ public class AudioPlayerHandler implements
 		}
 
 		mBufferingCurrentPosition = null;
+
+		abandonAudioFocus();
 	}
 
 	protected void start(boolean gainAudioFocus, boolean updateButton) {
@@ -175,16 +175,12 @@ public class AudioPlayerHandler implements
 	public boolean onError(MediaPlayer mp, int what, int extra) {
 		if(what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
 			// Recreate media player.
-
-			destroyMediaPlayer();
-
-			createMediaPlayer();
-
-			if(mView != null)
-				registerView(mView);
+			destroy();
+			create();
 		}
-
-		abandonAudioFocus();
+		else {
+			abandonAudioFocus();
+		}
 
 		return false;
 	}
@@ -194,79 +190,90 @@ public class AudioPlayerHandler implements
 		mView.setOnDetachListener(new OnDetachListener() {
 			@Override
 			public void onStartTemporaryDetach(View v) {
-				clearView();
+				clearRegisteredViews();
 			}
 
 			@Override
 			public void onDetachedFromWindow(View v) {
-				clearView();
+				clearRegisteredViews();
 			}
 		});
 
-		// Resume duration.
-		// Don't worry about current position as it will
-		// always be correlated with the seek bar position.
-		mView.setTimeDuration(mMediaPlayer.getDuration());
+		mButton = view.getButton();
+		mSeekBar = view.getSeekBar();
 
-		registerButton(view.getButton());
-
-		registerSeekBar(view.getSeekBar());
+		configureRegisteredViews();
 
 		// Resume updater.
 		startSeekBarUpdate();
 	}
 
-	protected void registerButton(PlayPauseImageButton button) {
-		mButton = button;
-
-		mButton.setOnPlayPauseListener(new PlayPauseImageButton.OnPlayPauseListener() {
-			@Override
-			public void onPlay(View v) {
-				start(true, false);
-			}
-
-			@Override
-			public void onPause(View v) {
-				pause(true, false);
-			}
-		});
-
-		// Resume button state.
-		mButton.setIsPlaying(mMediaPlayer.isGoingToPlay());
+	protected void configureRegisteredViews() {
+		configureView();
+		configureButton();
+		configureSeekBar();
 	}
 
-	protected void registerSeekBar(SeekBar seekBar) {
-		mSeekBar = seekBar;
-
-		mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-			@Override
-			public void onStartTrackingTouch(SeekBar seekBar) {
-				mHandler.removeCallbacks(mProgressUpdater);
-			}
-
-			@Override
-			public void onStopTrackingTouch(SeekBar seekBar) {
-				seekTo(seekBar.getProgress());
-				mHandler.post(mProgressUpdater);
-			}
-
-			@Override
-			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-				mView.setTimeCurrentPosition(progress);
-			}
-		});
-
-		// Resume progress.
-		mSeekBar.setMax(mMediaPlayer.getDuration());
-		mSeekBar.setProgress(mMediaPlayer.getCurrentPosition());
-		mSeekBar.setSecondaryProgress(mBufferingCurrentPosition != null ? mBufferingCurrentPosition : 0);
+	protected void configureView() {
+		if(mView != null && mMediaPlayer != null) {
+			// Resume duration.
+			// Don't worry about current position as it will
+			// always be correlated with the seek bar position.
+			mView.setTimeDuration(mMediaPlayer.getDuration());
+		}
 	}
 
-	protected void clearView() {
+	protected void configureButton() {
+		if(mButton != null && mMediaPlayer != null) {
+			mButton.setOnPlayPauseListener(new PlayPauseImageButton.OnPlayPauseListener() {
+				@Override
+				public void onPlay(View v) {
+					start(true, false);
+				}
+
+				@Override
+				public void onPause(View v) {
+					pause(true, false);
+				}
+			});
+
+			// Resume button state.
+			mButton.setIsPlaying(mMediaPlayer.isGoingToPlay());
+		}
+	}
+
+	protected void configureSeekBar() {
+		if(mSeekBar != null && mMediaPlayer != null) {
+			mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+				@Override
+				public void onStartTrackingTouch(SeekBar seekBar) {
+					mHandler.removeCallbacks(mProgressUpdater);
+				}
+
+				@Override
+				public void onStopTrackingTouch(SeekBar seekBar) {
+					seekTo(seekBar.getProgress());
+					mHandler.post(mProgressUpdater);
+				}
+
+				@Override
+				public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+					mView.setTimeCurrentPosition(progress);
+				}
+			});
+
+			// Resume progress.
+			mSeekBar.setMax(mMediaPlayer.getDuration());
+			mSeekBar.setProgress(mMediaPlayer.getCurrentPosition());
+			mSeekBar.setSecondaryProgress(mBufferingCurrentPosition != null ? mBufferingCurrentPosition : 0);
+		}
+	}
+
+	protected void clearRegisteredViews() {
 		mView.setOnDetachListener(null);
 		mView = null;
 
-		mButton.setOnClickListener(null);
+		mButton.setOnPlayPauseListener(null);
 		mButton = null;
 
 		mSeekBar.setOnSeekBarChangeListener(null);
