@@ -13,8 +13,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
-import com.heavyplayer.audioplayerrecorder.R;
 import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
 import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
 import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
@@ -48,7 +46,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 		mIsRecording = false;
 
 		if(BuildUtils.isDebug(this))
-			Toast.makeText(this, R.string.local_service_started, Toast.LENGTH_SHORT).show();
+			Log.i(TAG, "Local service started");
 	}
 
 	@Override
@@ -147,7 +145,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 		destroy();
 
 		if(BuildUtils.isDebug(this))
-			Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
+			Log.i(TAG, "Local service stopped");
 	}
 
 	protected void gainAudioFocus() {

@@ -6,8 +6,7 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
-import android.widget.Toast;
-import com.heavyplayer.audioplayerrecorder.R;
+import android.util.Log;
 import com.heavyplayer.audioplayerrecorder.util.AudioPlayerHandler;
 import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
 import com.heavyplayer.audioplayerrecorder.widget.AudioPlayerLayout;
@@ -17,6 +16,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class AudioPlayerService extends Service {
+	private static final String TAG = AudioPlayerService.class.getSimpleName();
+
 	private IBinder mBinder;
 
 	private Handler mHandler;
@@ -26,7 +27,7 @@ public class AudioPlayerService extends Service {
 	@Override
 	public void onCreate() {
 		if(BuildUtils.isDebug(this))
-			Toast.makeText(this, R.string.local_service_started, Toast.LENGTH_SHORT).show();
+			Log.i(TAG, "Local service started");
 
 		mBinder = onCreateLocalBinder();
 
@@ -57,7 +58,7 @@ public class AudioPlayerService extends Service {
 		destroy();
 
 		if(BuildUtils.isDebug(this))
-			Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT).show();
+			Log.i(TAG, "Local service stopped");
 	}
 
 	@Override

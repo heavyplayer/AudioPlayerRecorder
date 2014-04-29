@@ -8,8 +8,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.util.DisplayMetrics;
-import android.widget.Toast;
-import com.heavyplayer.audioplayerrecorder.R;
+import android.util.Log;
 import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
 
 public class ServiceManager implements ServiceConnection {
@@ -113,7 +112,7 @@ public class ServiceManager implements ServiceConnection {
 			mStateListener.onServiceBind(mBinder);
 
 		if(BuildUtils.isDebug(mActivity))
-			Toast.makeText(mActivity, R.string.local_service_connected, Toast.LENGTH_SHORT).show();
+			Log.i(mServiceClass.getSimpleName(), "Local service connected");
 	}
 
 	@Override
@@ -123,7 +122,7 @@ public class ServiceManager implements ServiceConnection {
 			mStateListener.onServiceUnbind(null);
 
 		if(BuildUtils.isDebug(mActivity))
-			Toast.makeText(mActivity, R.string.local_service_disconnected, Toast.LENGTH_SHORT).show();
+			Log.i(mServiceClass.getSimpleName(), "Local service disconnected");
 	}
 
 	public void setServiceStateListener(StateListener listener) {
