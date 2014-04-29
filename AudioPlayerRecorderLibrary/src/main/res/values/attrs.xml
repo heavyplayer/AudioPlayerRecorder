@@ -19,6 +19,7 @@
 		<attr name="seekBarMarginRight" format="dimension"/>
 		<attr name="timeDurationColor" format="color"/>
 		<attr name="timeCurrentPositionColor" format="color"/>
+		<attr name="android:maxWidth"/>
 	</declare-styleable>
 
 </resources>

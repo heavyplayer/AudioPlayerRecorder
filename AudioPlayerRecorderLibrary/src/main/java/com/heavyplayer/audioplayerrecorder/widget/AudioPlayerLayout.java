@@ -36,6 +36,7 @@ public class AudioPlayerLayout extends ViewGroup {
 	private Integer mSeekBarMarginRight;
 	private Integer mTimeCurrentPositionColor;
 	private Integer mTimeDurationColor;
+	private Integer mMaxWidth;
 
 	// Time variables.
 	private int mTimeCurrentPosition = -1;
@@ -72,6 +73,7 @@ public class AudioPlayerLayout extends ViewGroup {
 					mSeekBarMarginRight = getDimensionPixelSize(ta, R.styleable.AudioPlayerLayout_seekBarMarginRight);
 					mTimeCurrentPositionColor = getColor(ta, R.styleable.AudioPlayerLayout_timeCurrentPositionColor);
 					mTimeDurationColor = getColor(ta, R.styleable.AudioPlayerLayout_timeDurationColor);
+					mMaxWidth = getDimensionPixelSize(ta, R.styleable.AudioPlayerLayout_android_maxWidth);
 				} finally {
 					ta.recycle();
 				}
@@ -236,14 +238,19 @@ public class AudioPlayerLayout extends ViewGroup {
 		measureChild(mTimeDurationTextView, widthMeasureSpec, heightMeasureSpec);
 
 		// Measure seek bar.
+		final int availableWidth = mMaxWidth != null ?
+				Math.min(mMaxWidth, MeasureSpec.getSize(widthMeasureSpec)) :
+				MeasureSpec.getSize(widthMeasureSpec);
+
 		final int remainingWidth =
-				MeasureSpec.getSize(widthMeasureSpec) -
+				availableWidth -
 				mButton.getMeasuredWidth() -
 				mTimeCurrentPositionTextView.getMeasuredWidth() -
 				mTimeDurationTextView.getMeasuredWidth();
 
-		final int remainingWidthMeasureSpec = MeasureSpec.makeMeasureSpec(remainingWidth, MeasureSpec.EXACTLY);
-		measureChildWithMargins(mSeekBar, remainingWidthMeasureSpec, 0, heightMeasureSpec, 0);
+		final int seekBarWidth = Math.max(remainingWidth, 0);
+		final int seekBarWidthMeasureSpec = MeasureSpec.makeMeasureSpec(seekBarWidth, MeasureSpec.EXACTLY);
+		measureChildWithMargins(mSeekBar, seekBarWidthMeasureSpec, 0, heightMeasureSpec, 0);
 
 		// Calculate max width and height, taking padding into account.
 
