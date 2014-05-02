@@ -144,6 +144,7 @@ public class SafeMediaPlayer extends MediaPlayer implements
 	@Override
 	public void reset() {
 		super.reset();
+		mIsGoingToPlay = false;
 		mFixedCurrentPosition = 0;
 		mCurrentPositionManager.clear();
 		mDuration = 100;
@@ -168,10 +169,18 @@ public class SafeMediaPlayer extends MediaPlayer implements
 
 	@Override
 	public void onCompletion(MediaPlayer mp) {
-		mIsGoingToPlay = false;
+		if(isPreparedInner()) {
+			// onCompletion may be called even after there was an error.
+			// We check if the player is prepared, because we only want
+			// to update the player state if the playback was successful.
+			// Otherwise, we should not interfere and let the error handling
+			// update these values.
 
-		mFixedCurrentPosition = getDuration();
-		mCurrentPositionManager.clear();
+			mIsGoingToPlay = false;
+
+			mFixedCurrentPosition = getDuration();
+			mCurrentPositionManager.clear();
+		}
 
 		if(mOnCompletionListener != null)
 			mOnCompletionListener.onCompletion(mp);

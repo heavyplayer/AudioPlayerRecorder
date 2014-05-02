@@ -160,7 +160,7 @@ public class AudioPlayerHandler implements
 	public void onCompletion(MediaPlayer mp) {
 		// Updates seek bar.
 		if(mSeekBar != null)
-			mSeekBar.setProgress(mp.getDuration());
+			mSeekBar.setProgress(mp.getCurrentPosition());
 
 		updateButton(false);
 
