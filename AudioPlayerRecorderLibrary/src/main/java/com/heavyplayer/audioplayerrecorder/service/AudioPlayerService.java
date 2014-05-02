@@ -1,6 +1,7 @@
 package com.heavyplayer.audioplayerrecorder.service;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Binder;
@@ -70,7 +71,7 @@ public class AudioPlayerService extends Service {
 		public void register(long id, Uri fileUri, boolean showBufferIfPossible, AudioPlayerLayout view) {
 			AudioPlayerHandler player = mPlayers.get(id);
 			if(player == null) {
-				player = new AudioPlayerHandler(AudioPlayerService.this, fileUri, showBufferIfPossible, mHandler);
+				player = onCreateAudioPlayerHandler(AudioPlayerService.this, fileUri, showBufferIfPossible, mHandler);
 				mPlayers.put(id, player);
 			}
 
@@ -80,5 +81,10 @@ public class AudioPlayerService extends Service {
 		public void destroyPlayers() {
 			destroy();
 		}
+	}
+
+	public AudioPlayerHandler onCreateAudioPlayerHandler(Context context, Uri fileUri, boolean showBufferIfPossible,
+	                                                     Handler handler) {
+		return new AudioPlayerHandler(context, fileUri, showBufferIfPossible, handler);
 	}
 }
