@@ -13,9 +13,11 @@ import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 import com.heavyplayer.audioplayerrecorder.fragment.AudioRecorderFragment;
 import com.heavyplayer.audioplayerrecorder.sample.R;
 import com.heavyplayer.audioplayerrecorder.sample.obj.Item;
+import com.heavyplayer.audioplayerrecorder.utils.AudioUtils;
 
 import java.io.File;
 
@@ -85,10 +87,19 @@ public class RecorderActivity extends ActionBarActivity implements AdapterView.O
     }
 
 	public void onRecord(View v) {
+		if(!AudioUtils.isMicrophoneAvailable(this)) {
+			Toast.makeText(this, R.string.error_microphone_not_available, Toast.LENGTH_LONG).show();
+			return;
+		}
+
 		final String fileName = getSelectedItem().getFileName();
-		if(fileName != null)
-			AudioRecorderFragment.newInstance(generateExternalStorageFileUri(fileName))
-					.show(getSupportFragmentManager(), AudioRecorderFragment.TAG);
+		if(fileName == null) {
+			Toast.makeText(this, R.string.error_filename_invalid, Toast.LENGTH_LONG).show();
+			return;
+		}
+
+		AudioRecorderFragment.newInstance(generateExternalStorageFileUri(fileName))
+				.show(getSupportFragmentManager(), AudioRecorderFragment.TAG);
 	}
 
 	protected Uri generateExternalStorageFileUri(String fileName) {

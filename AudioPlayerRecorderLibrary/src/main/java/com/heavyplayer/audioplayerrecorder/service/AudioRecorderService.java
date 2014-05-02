@@ -97,8 +97,11 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 				if(mStateListener != null)
 					mStateListener.onStartRecorder();
 			}
-			catch (Exception e) {
+			catch(Exception e) {
 				Log.w(TAG, e);
+
+				if(mStateListener != null)
+					mStateListener.onStartRecorderFailed(e);
 			}
 		}
 	}
@@ -279,6 +282,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
 	public static interface AudioRecorderStateListener {
 		public void onStartRecorder();
+		public void onStartRecorderFailed(Exception e);
 		public void onStopRecorder();
 		public void onTimeLimitExceeded();
 	}

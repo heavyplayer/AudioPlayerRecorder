@@ -138,6 +138,11 @@ public class AudioRecorderFragment extends DialogFragment
 	}
 
 	@Override
+	public void onStartRecorderFailed(Exception e) {
+		// Purposely empty.
+	}
+
+	@Override
 	public void onStopRecorder() {
 		Activity activity = getActivity();
 		if(activity != null)
