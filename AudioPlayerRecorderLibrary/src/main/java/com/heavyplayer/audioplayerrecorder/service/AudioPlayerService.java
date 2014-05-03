@@ -71,7 +71,13 @@ public class AudioPlayerService extends Service {
 		public void register(long id, Uri fileUri, boolean showBufferIfPossible, AudioPlayerLayout view) {
 			AudioPlayerHandler player = mPlayers.get(id);
 			if(player == null) {
-				player = onCreateAudioPlayerHandler(AudioPlayerService.this, fileUri, showBufferIfPossible, mHandler);
+				player = onCreateAudioPlayerHandler(
+						AudioPlayerService.this,
+						id,
+						fileUri,
+						showBufferIfPossible,
+						mHandler);
+
 				mPlayers.put(id, player);
 			}
 
@@ -83,8 +89,8 @@ public class AudioPlayerService extends Service {
 		}
 	}
 
-	public AudioPlayerHandler onCreateAudioPlayerHandler(Context context, Uri fileUri, boolean showBufferIfPossible,
-	                                                     Handler handler) {
+	public AudioPlayerHandler onCreateAudioPlayerHandler(Context context, long id, Uri fileUri,
+	                                                     boolean showBufferIfPossible, Handler handler) {
 		return new AudioPlayerHandler(context, fileUri, showBufferIfPossible, handler);
 	}
 }
