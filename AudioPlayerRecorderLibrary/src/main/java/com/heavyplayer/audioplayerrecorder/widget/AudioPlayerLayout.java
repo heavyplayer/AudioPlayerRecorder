@@ -7,7 +7,6 @@ import android.content.res.TypedArray;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
@@ -256,6 +255,7 @@ public class AudioPlayerLayout extends ViewGroup {
 		final int seekBarWidthMeasureSpec = MeasureSpec.makeMeasureSpec(seekBarWidth, MeasureSpec.EXACTLY);
 		measureChildWithMargins(mSeekBar, seekBarWidthMeasureSpec, 0, heightMeasureSpec, 0);
 
+
 		// Calculate max width and height, taking padding into account.
 
 		final int measuredWidth =
@@ -271,9 +271,16 @@ public class AudioPlayerLayout extends ViewGroup {
 					Math.max(mTimeCurrentPositionTextView.getMeasuredHeight(), mTimeDurationTextView.getMeasuredHeight())) +
 				getPaddingTop() + getPaddingBottom();
 
-		setMeasuredDimension(
-				resolveSize(measuredWidth, widthMeasureSpec),
-				resolveSize(measuredHeight, heightMeasureSpec));
+
+		// Resolve width and height.
+
+		final int width = mMaxWidth != null ?
+				Math.min(mMaxWidth, resolveSize(measuredWidth, widthMeasureSpec)) :
+				resolveSize(measuredWidth, widthMeasureSpec);
+
+		final int height = resolveSize(measuredHeight, heightMeasureSpec);
+
+		setMeasuredDimension(width, height);
 	}
 
 	@Override
