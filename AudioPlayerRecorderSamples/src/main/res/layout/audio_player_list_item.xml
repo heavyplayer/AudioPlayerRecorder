@@ -18,6 +18,7 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_marginLeft="64dip"
+			app:timeCurrentPositionColor="@color/color_time"
 			app:timeDurationColor="@android:color/darker_gray"/>
 
 

@@ -1,11 +1,13 @@
 package com.heavyplayer.audioplayerrecorder.widget;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,13 +36,15 @@ public class AudioPlayerLayout extends ViewGroup {
 	private Integer mButtonBackgroundResId;
 	private Integer mSeekBarMarginLeft;
 	private Integer mSeekBarMarginRight;
-	private Integer mTimeCurrentPositionColor;
-	private Integer mTimeDurationColor;
+	private ColorStateList mTimeCurrentPositionColor;
+	private ColorStateList mTimeDurationColor;
 	private Integer mMaxWidth;
 
 	// Time variables.
 	private int mTimeCurrentPosition = -1;
 	private int mTimeDuration = -1;
+
+	private boolean mIsPlaying = false;
 
 	public AudioPlayerLayout(Context context) {
 		super(context);
@@ -71,8 +75,8 @@ public class AudioPlayerLayout extends ViewGroup {
 					mButtonBackgroundResId = getResourceId(ta, R.styleable.AudioPlayerLayout_buttonBackground);
 					mSeekBarMarginLeft = getDimensionPixelSize(ta, R.styleable.AudioPlayerLayout_seekBarMarginLeft);
 					mSeekBarMarginRight = getDimensionPixelSize(ta, R.styleable.AudioPlayerLayout_seekBarMarginRight);
-					mTimeCurrentPositionColor = getColor(ta, R.styleable.AudioPlayerLayout_timeCurrentPositionColor);
-					mTimeDurationColor = getColor(ta, R.styleable.AudioPlayerLayout_timeDurationColor);
+					mTimeCurrentPositionColor = getColorStateList(ta, R.styleable.AudioPlayerLayout_timeCurrentPositionColor);
+					mTimeDurationColor = getColorStateList(ta, R.styleable.AudioPlayerLayout_timeDurationColor);
 					mMaxWidth = getDimensionPixelSize(ta, R.styleable.AudioPlayerLayout_android_maxWidth);
 				} finally {
 					ta.recycle();
@@ -89,8 +93,8 @@ public class AudioPlayerLayout extends ViewGroup {
 		return ta.hasValue(index) ? ta.getDimensionPixelSize(index, 0) : null;
 	}
 
-	private Integer getColor(TypedArray ta, int index) {
-		return ta.hasValue(index) ? ta.getColor(index, 0) : null;
+	private ColorStateList getColorStateList(TypedArray ta, int index) {
+		return ta.hasValue(index) ? ta.getColorStateList(index) : null;
 	}
 
 	@Override
@@ -338,6 +342,18 @@ public class AudioPlayerLayout extends ViewGroup {
 				String.format("%02d:%02d", minutes, seconds);
 	}
 
+	public void setIsPlaying(boolean isPlaying) {
+		if(mIsPlaying != isPlaying) {
+			mIsPlaying = isPlaying;
+
+			if(mTimeCurrentPositionTextView != null)
+				mTimeCurrentPositionTextView.setSelected(isPlaying);
+
+			if(mTimeDurationTextView != null)
+				mTimeDurationTextView.setSelected(isPlaying);
+		}
+	}
+
 	private boolean hasHours(long millis) {
 		return millis >= HOUR_MILLIS;
 	}
@@ -379,6 +395,7 @@ public class AudioPlayerLayout extends ViewGroup {
 		ss.seekBarSavedState = mSeekBar.onSaveInstanceState();
 		ss.timeCurrentPosition = mTimeCurrentPosition;
 		ss.timeDuration = mTimeDuration;
+		ss.isPlaying = mIsPlaying;
 		return ss;
 	}
 
@@ -396,6 +413,7 @@ public class AudioPlayerLayout extends ViewGroup {
 		// Update time.
 		setTimeDuration(ss.timeDuration);
 		setTimeCurrentPosition(ss.timeCurrentPosition);
+		setIsPlaying(ss.isPlaying);
 	}
 
 	static class SavedState extends BaseSavedState {
@@ -403,6 +421,7 @@ public class AudioPlayerLayout extends ViewGroup {
 		Parcelable seekBarSavedState;
 		int timeCurrentPosition;
 		int timeDuration;
+		boolean isPlaying;
 
 		public SavedState(Parcel source) {
 			super(source);
@@ -410,6 +429,7 @@ public class AudioPlayerLayout extends ViewGroup {
 			seekBarSavedState = source.readParcelable(SavedState.class.getClassLoader());
 			timeCurrentPosition = source.readInt();
 			timeDuration = source.readInt();
+			isPlaying = source.readInt() == 1;
 		}
 
 		@Override
@@ -419,6 +439,7 @@ public class AudioPlayerLayout extends ViewGroup {
 			dest.writeParcelable(seekBarSavedState, 0);
 			dest.writeInt(timeCurrentPosition);
 			dest.writeInt(timeDuration);
+			dest.writeInt(isPlaying ? 1 : 0);
 		}
 
 		public SavedState(Parcelable superState) {

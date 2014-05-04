@@ -70,11 +70,11 @@ public class SafeMediaPlayer extends MediaPlayer implements
 	}
 
 	public boolean isPrepared() {
-		return mState != State.CREATED;
+		return mState == State.PREPARED || mState == State.STARTED;
 	}
 
-	protected boolean isPreparedInner() {
-		return mState == State.PREPARED || mState == State.STARTED;
+	protected boolean isPreparing() {
+		return mState == State.PREPARING;
 	}
 
 	@Override
@@ -94,7 +94,7 @@ public class SafeMediaPlayer extends MediaPlayer implements
 	public void start() throws IllegalStateException {
 		mIsGoingToPlay = true;
 
-		if(isPreparedInner()) {
+		if(isPrepared()) {
 			final boolean isStarting = !isPlaying();
 			super.start();
 			mState = State.STARTED;
@@ -116,7 +116,7 @@ public class SafeMediaPlayer extends MediaPlayer implements
 
 	@Override
 	public void seekTo(int msec) throws IllegalStateException {
-		if(isPreparedInner()) {
+		if(isPrepared()) {
 			super.seekTo(msec);
 			mFixedCurrentPosition = null;
 			mCurrentPositionManager.set(ensureValidPosition(msec));
@@ -135,7 +135,7 @@ public class SafeMediaPlayer extends MediaPlayer implements
 	public void stop() throws IllegalStateException {
 		mIsGoingToPlay = false;
 
-		if(isPreparedInner()) {
+		if(isPrepared()) {
 			super.stop();
 			mState = State.PREPARED;
 		}
@@ -169,7 +169,7 @@ public class SafeMediaPlayer extends MediaPlayer implements
 
 	@Override
 	public void onCompletion(MediaPlayer mp) {
-		if(isPreparedInner()) {
+		if(isPrepared()) {
 			// onCompletion may be called even after there was an error.
 			// We check if the player is prepared, because we only want
 			// to update the player state if the playback was successful.

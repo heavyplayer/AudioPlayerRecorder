@@ -94,7 +94,7 @@ public class AudioPlayerHandler implements
 		if(gainAudioFocus)
 			gainAudioFocus();
 
-		if(!mMediaPlayer.isPrepared()) {
+		if(!mMediaPlayer.isPreparing() && !mMediaPlayer.isPrepared()) {
 			try {
 				mMediaPlayer.setDataSource(mFileUri.toString());
 				mMediaPlayer.prepare();
@@ -105,15 +105,13 @@ public class AudioPlayerHandler implements
 
 		mMediaPlayer.start();
 
-		if(updateButton)
-			updateButton(true);
+		updatePlayingState(true, updateButton);
 	}
 
 	protected void pause(boolean abandonAudioFocus, boolean updateButton) {
 		mMediaPlayer.pause();
 
-		if(updateButton)
-			updateButton(false);
+		updatePlayingState(false, updateButton);
 
 		if(abandonAudioFocus)
 			abandonAudioFocus();
@@ -123,8 +121,11 @@ public class AudioPlayerHandler implements
 		mMediaPlayer.seekTo(msec);
 	}
 
-	protected void updateButton(boolean isPlaying) {
-		if(mButton != null)
+	protected void updatePlayingState(boolean isPlaying, boolean updateButton) {
+		if(mView != null)
+			mView.setIsPlaying(isPlaying);
+
+		if(mButton != null && updateButton)
 			mButton.setIsPlaying(isPlaying);
 	}
 
@@ -162,7 +163,7 @@ public class AudioPlayerHandler implements
 		if(mSeekBar != null)
 			mSeekBar.setProgress(mp.getCurrentPosition());
 
-		updateButton(false);
+		updatePlayingState(false, true);
 
 		abandonAudioFocus();
 	}
@@ -226,6 +227,9 @@ public class AudioPlayerHandler implements
 			// Don't worry about current position as it will
 			// always be correlated with the seek bar position.
 			mView.setTimeDuration(mMediaPlayer.getDuration());
+
+			// Resume playing state.
+			mView.setIsPlaying(mMediaPlayer.isGoingToPlay());
 		}
 	}
 
@@ -243,7 +247,7 @@ public class AudioPlayerHandler implements
 				}
 			});
 
-			// Resume button state.
+			// Resume playing state.
 			mButton.setIsPlaying(mMediaPlayer.isGoingToPlay());
 		}
 	}
