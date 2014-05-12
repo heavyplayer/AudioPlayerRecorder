@@ -68,6 +68,8 @@ public class AudioPlayerHandler implements
 	}
 
 	public void destroy() {
+		clearRegisteredViews();
+
 		if(mMediaPlayer != null) {
 			try {
 				mMediaPlayer.setOnPreparedListener(null);
@@ -280,14 +282,20 @@ public class AudioPlayerHandler implements
 	}
 
 	protected void clearRegisteredViews() {
-		mView.setOnDetachListener(null);
-		mView = null;
+		if(mView != null) {
+			mView.setOnDetachListener(null);
+			mView = null;
+		}
 
-		mButton.setOnPlayPauseListener(null);
-		mButton = null;
+		if(mButton != null) {
+			mButton.setOnPlayPauseListener(null);
+			mButton = null;
+		}
 
-		mSeekBar.setOnSeekBarChangeListener(null);
-		mSeekBar = null;
+		if(mSeekBar != null) {
+			mSeekBar.setOnSeekBarChangeListener(null);
+			mSeekBar = null;
+		}
 	}
 
 	protected void gainAudioFocus() {
