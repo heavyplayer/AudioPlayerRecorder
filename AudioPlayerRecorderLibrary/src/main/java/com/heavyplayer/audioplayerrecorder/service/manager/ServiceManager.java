@@ -89,9 +89,9 @@ public class ServiceManager implements ServiceConnection {
 				mStateListener.onServiceUnbind(mBinder);
 
 			mBinder = null;
-
-			mActivity.unbindService(this);
 		}
+
+		mActivity.unbindService(this);
 	}
 
 	protected boolean isPortrait() {
