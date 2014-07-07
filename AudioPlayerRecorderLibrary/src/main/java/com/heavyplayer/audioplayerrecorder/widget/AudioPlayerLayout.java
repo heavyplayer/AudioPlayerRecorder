@@ -461,7 +461,7 @@ public class AudioPlayerLayout extends ViewGroup {
 
 			@Override
 			public SavedState[] newArray(int size) {
-				return new SavedState[0];
+				return new SavedState[size];
 			}
 		};
 	}

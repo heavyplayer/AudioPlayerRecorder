@@ -177,7 +177,7 @@ public class PlayPauseImageButton extends ImageButton implements View.OnClickLis
 
 			@Override
 			public SavedState[] newArray(int size) {
-				return new SavedState[0];
+				return new SavedState[size];
 			}
 		};
 	}
