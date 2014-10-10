@@ -17,7 +17,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class AudioPlayerService extends Service {
-	private static final String TAG = AudioPlayerService.class.getSimpleName();
+	private static final String LOG_TAG = AudioPlayerService.class.getSimpleName();
 
 	private IBinder mBinder;
 
@@ -28,7 +28,7 @@ public class AudioPlayerService extends Service {
 	@Override
 	public void onCreate() {
 		if(BuildUtils.isDebug(this))
-			Log.i(TAG, "Local service started");
+			Log.i(LOG_TAG, "Local service started");
 
 		mBinder = onCreateLocalBinder();
 
@@ -59,7 +59,7 @@ public class AudioPlayerService extends Service {
 		destroy();
 
 		if(BuildUtils.isDebug(this))
-			Log.i(TAG, "Local service stopped");
+			Log.i(LOG_TAG, "Local service stopped");
 	}
 
 	@Override

@@ -20,7 +20,7 @@ public class AudioPlayerHandler implements
 		MediaPlayer.OnCompletionListener,
 		MediaPlayer.OnBufferingUpdateListener,
 		MediaPlayer.OnErrorListener {
-	public static final String TAG = AudioPlayerHandler.class.getSimpleName();
+	public static final String LOG_TAG = AudioPlayerHandler.class.getSimpleName();
 
 	private final static long PROGRESS_UPDATE_INTERVAL_MS = 200;
 
@@ -83,7 +83,7 @@ public class AudioPlayerHandler implements
 				mMediaPlayer = null;
 			}
 			catch(Exception e) {
-				Log.w(TAG, e);
+				Log.w(LOG_TAG, e);
 			}
 		}
 
@@ -101,7 +101,7 @@ public class AudioPlayerHandler implements
 				mMediaPlayer.setDataSource(mFileUri.toString());
 				mMediaPlayer.prepare();
 			} catch (IOException e) {
-				Log.w(TAG, e);
+				Log.w(LOG_TAG, e);
 			}
 		}
 

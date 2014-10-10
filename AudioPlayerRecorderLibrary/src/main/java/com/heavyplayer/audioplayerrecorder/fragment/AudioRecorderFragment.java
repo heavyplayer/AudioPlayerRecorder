@@ -19,8 +19,6 @@ import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
 
 public class AudioRecorderFragment extends DialogFragment
 		implements View.OnClickListener, ServiceManager.StateListener, AudioRecorderService.AudioRecorderStateListener {
-	public static final String TAG = AudioRecorderFragment.class.getSimpleName();
-
 	private static final String ARG_FILE_URI = "arg_file_uri";
 
 	private AudioRecorderServiceManager mAudioRecorderServiceManager;

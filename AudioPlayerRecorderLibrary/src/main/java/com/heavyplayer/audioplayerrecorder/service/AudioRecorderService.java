@@ -18,7 +18,7 @@ import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
 import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 
 public class AudioRecorderService extends Service implements AudioManager.OnAudioFocusChangeListener {
-	public static final String TAG = AudioRecorderService.class.getSimpleName();
+	public static final String LOG_TAG = AudioRecorderService.class.getSimpleName();
 
 	private final static int UPDATE_INTERVAL_MS = 100;
 
@@ -46,7 +46,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 		mIsRecording = false;
 
 		if(BuildUtils.isDebug(this))
-			Log.i(TAG, "Local service started");
+			Log.i(LOG_TAG, "Local service started");
 	}
 
 	@Override
@@ -98,7 +98,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 					mStateListener.onStartRecorder();
 			}
 			catch(Exception e) {
-				Log.w(TAG, e);
+				Log.w(LOG_TAG, e);
 
 				if(mStateListener != null)
 					mStateListener.onStartRecorderFailed(e);
@@ -115,7 +115,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 				catch(Exception e) {
 					// This can happen, for instance, when stop is called immediately after start.
 					// We will act like if the stop was successful, since the recording is stopped nonetheless.
-					Log.w(TAG, e);
+					Log.w(LOG_TAG, e);
 				}
 
 				mRecorder.reset();
@@ -148,7 +148,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 		destroy();
 
 		if(BuildUtils.isDebug(this))
-			Log.i(TAG, "Local service stopped");
+			Log.i(LOG_TAG, "Local service stopped");
 	}
 
 	protected void gainAudioFocus() {
