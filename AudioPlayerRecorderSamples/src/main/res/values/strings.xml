@@ -5,4 +5,7 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 
+    <string name="permission_rationale">You need to grant application record audio permission in Settings application.</string>
+    <string name="permission_action_allow">Allow</string>
+    <string name="permission_action_settings">Settings</string>
 </resources>

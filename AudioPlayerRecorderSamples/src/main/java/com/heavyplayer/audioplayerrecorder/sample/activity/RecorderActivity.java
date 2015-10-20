@@ -5,11 +5,19 @@ import com.heavyplayer.audioplayerrecorder.sample.R;
 import com.heavyplayer.audioplayerrecorder.sample.obj.Item;
 import com.heavyplayer.audioplayerrecorder.utils.AudioUtils;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.v7.app.ActionBarActivity;
+import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -22,7 +30,11 @@ import android.widget.Toast;
 
 import java.io.File;
 
-public class RecorderActivity extends ActionBarActivity implements AdapterView.OnItemClickListener {
+public class RecorderActivity extends AppCompatActivity
+        implements AdapterView.OnItemClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
+    private final static String PERMISSION = Manifest.permission.RECORD_AUDIO;
+    private final static int REQUEST_CODE_PERMISSION = 0;
+
     private static Item[] sItems = {
             new Item(0),
             new Item(1),
@@ -43,6 +55,10 @@ public class RecorderActivity extends ActionBarActivity implements AdapterView.O
     protected TextView mTitleView;
     protected ListView mListView;
 
+    // Tracks if permission was just granted,
+    // workaround for https://code.google.com/p/android-developer-preview/issues/detail?id=2823.
+    private boolean mStartRecord;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,6 +72,16 @@ public class RecorderActivity extends ActionBarActivity implements AdapterView.O
         mListView.setOnItemClickListener(this);
         // Select first item.
         mListView.performItemClick(mListView.getChildAt(0), 0, mListView.getItemIdAtPosition(0));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (mStartRecord) {
+            mStartRecord = false;
+            onRecord(null);
+        }
     }
 
     protected ListAdapter onCreateAdapter(Context context, Item[] objects) {
@@ -93,14 +119,16 @@ public class RecorderActivity extends ActionBarActivity implements AdapterView.O
             return;
         }
 
-        final String fileName = getSelectedItem().getFileName();
-        if (fileName == null) {
-            Toast.makeText(this, R.string.error_filename_invalid, Toast.LENGTH_LONG).show();
-            return;
-        }
+        if (hasPermission()) {
+            final String fileName = getSelectedItem().getFileName();
+            if (fileName == null) {
+                Toast.makeText(this, R.string.error_filename_invalid, Toast.LENGTH_LONG).show();
+                return;
+            }
 
-        AudioRecorderFragment.newInstance(generateExternalStorageFileUri(fileName))
-                             .show(getSupportFragmentManager(), AudioRecorderFragment.TAG);
+            AudioRecorderFragment.newInstance(generateExternalStorageFileUri(fileName))
+                                 .show(getSupportFragmentManager(), AudioRecorderFragment.TAG);
+        }
     }
 
     protected Uri generateExternalStorageFileUri(String fileName) {
@@ -110,6 +138,59 @@ public class RecorderActivity extends ActionBarActivity implements AdapterView.O
 
     protected Item getSelectedItem() {
         return (Item) mListView.getItemAtPosition(mListView.getCheckedItemPosition());
+    }
+
+    private boolean hasPermission() {
+        if (ContextCompat.checkSelfPermission(this, PERMISSION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, PERMISSION)) {
+                Snackbar.make(mListView, R.string.permission_rationale, Snackbar.LENGTH_LONG)
+                        .setAction(getString(R.string.permission_action_allow), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                requestPermission();
+                            }
+                        }).show();
+            } else {
+                requestPermission();
+            }
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    private void requestPermission() {
+        ActivityCompat.requestPermissions(this, new String[]{PERMISSION}, REQUEST_CODE_PERMISSION);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        switch (requestCode) {
+            case REQUEST_CODE_PERMISSION:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    mStartRecord = true;
+                    // Just call {@link #onRecord(View)} when bug fux goes live.
+                } else {
+                    Snackbar.make(mListView, R.string.permission_rationale, Snackbar.LENGTH_LONG)
+                            .setAction(
+                                    getString(R.string.permission_action_settings), new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View v) {
+                                            Intent intent = new Intent();
+                                            intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                            intent.setData(
+                                                    Uri.parse("package:" + getApplicationContext().getPackageName()));
+                                            if (intent.resolveActivity(getPackageManager()) != null) {
+                                                startActivity(intent);
+                                            }
+                                        }
+                                    }).show();
+                }
+                break;
+        }
     }
 
     protected class ItemAdapter extends ArrayAdapter<Item> {
