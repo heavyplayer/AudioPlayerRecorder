@@ -19,7 +19,7 @@ import android.view.WindowManager;
 
 public class AudioRecorderFragment extends DialogFragment
         implements View.OnClickListener, ServiceManager.StateListener, AudioRecorderService.AudioRecorderStateListener {
-    public static final String TAG = AudioRecorderFragment.class.getSimpleName();
+    public static final String TAG = AudioRecorderFragment.class.getName();
 
     private static final String ARG_FILE_URI = "arg_file_uri";
 
