@@ -154,8 +154,8 @@ public class RecorderActivity extends AppCompatActivity
     private boolean hasPermission() {
         if (ContextCompat.checkSelfPermission(this, PERMISSION) != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this, PERMISSION)) {
-                Snackbar.make(mListView, R.string.permission_rationale, Snackbar.LENGTH_LONG)
-                        .setAction(getString(R.string.permission_action_allow), new View.OnClickListener() {
+                Snackbar.make(mListView, R.string.permission_microphone_rationale, Snackbar.LENGTH_LONG)
+                        .setAction(getString(R.string.permission_action_ok), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
                                 requestPermission();
@@ -185,7 +185,7 @@ public class RecorderActivity extends AppCompatActivity
                     mStartRecord = true;
                     // Just call {@link #onRecord(View)} when bug fix goes live.
                 } else {
-                    Snackbar.make(mListView, R.string.permission_rationale, Snackbar.LENGTH_LONG)
+                    Snackbar.make(mListView, R.string.permission_microphone_rationale, Snackbar.LENGTH_LONG)
                             .setAction(
                                     getString(R.string.permission_action_settings), new View.OnClickListener() {
                                         @Override
