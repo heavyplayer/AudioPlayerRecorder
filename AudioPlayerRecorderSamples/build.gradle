@@ -25,7 +25,7 @@ android {
 
 dependencies {
     // After update, check if activity still being recreated after permission granted,
-    // if no - remove RecorderActivity.STATE_START_RECORD
+    // if no - remove RecorderActivity.mStartRecord.
     compile 'com.android.support:appcompat-v7:23.0.1'
     compile 'com.android.support:design:23.0.1'
     compile fileTree(dir: 'libs', include: ['*.jar'])

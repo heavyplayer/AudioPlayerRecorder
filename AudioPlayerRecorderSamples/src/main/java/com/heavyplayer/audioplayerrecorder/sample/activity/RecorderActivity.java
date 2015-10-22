@@ -55,8 +55,8 @@ public class RecorderActivity extends AppCompatActivity
     protected TextView mTitleView;
     protected ListView mListView;
 
-    // Tracks if permission was just granted,
-    // workaround for https://code.google.com/p/android-developer-preview/issues/detail?id=2823.
+    // Signals that recording can start, but only after permissions are granted.
+    // Workaround for https://code.google.com/p/android-developer-preview/issues/detail?id=2823.
     private boolean mStartRecord;
 
     @Override
@@ -183,7 +183,7 @@ public class RecorderActivity extends AppCompatActivity
             case REQUEST_CODE_PERMISSION:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     mStartRecord = true;
-                    // Just call {@link #onRecord(View)} when bug fux goes live.
+                    // Just call {@link #onRecord(View)} when bug fix goes live.
                 } else {
                     Snackbar.make(mListView, R.string.permission_rationale, Snackbar.LENGTH_LONG)
                             .setAction(
