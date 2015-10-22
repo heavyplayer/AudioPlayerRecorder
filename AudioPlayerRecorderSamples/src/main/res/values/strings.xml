@@ -5,4 +5,8 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 
+    <string name="permission_microphone_rationale">Microphone permission is needed to record audio.</string>
+    <string name="permission_action_ok">OK</string>
+    <string name="permission_action_settings">Settings</string>
+    <string name="error_storage_not_available">Storage not available.</string>
 </resources>
