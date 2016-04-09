@@ -55,8 +55,8 @@ public class RecorderActivity extends AppCompatActivity
     protected TextView mTitleView;
     protected ListView mListView;
 
-    // Signals that recording can start, but only after permissions are granted.
-    // Workaround for https://code.google.com/p/android-developer-preview/issues/detail?id=2823.
+    // Signals that recording can start, as permissions were granted.
+    // Workaround for https://code.google.com/p/android/issues/detail?id=190966.
     private boolean mStartRecord;
 
     @Override
