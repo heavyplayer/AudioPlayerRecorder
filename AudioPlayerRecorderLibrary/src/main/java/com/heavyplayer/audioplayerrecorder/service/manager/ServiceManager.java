@@ -32,20 +32,20 @@ public class ServiceManager implements ServiceConnection {
         startService();
     }
 
-    final public void onActivityResume() {
+    final public void onActivityStart() {
         onActivateService(!mIsServiceRunning);
     }
 
-    final public void onActivityPause() {
+    final public void onActivityStop() {
         onDeactivateService(mIsPortrait == isPortrait());
     }
 
-    final public void onFragmentResume() {
-        onActivityResume();
+    final public void onFragmentStart() {
+        onActivityStart();
     }
 
-    final public void onFragmentPause() {
-        onActivityPause();
+    final public void onFragmentStop() {
+        onActivityStop();
     }
 
     protected void onActivateService(boolean startService) {
