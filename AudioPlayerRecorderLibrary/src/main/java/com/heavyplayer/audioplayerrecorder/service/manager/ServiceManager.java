@@ -1,5 +1,7 @@
 package com.heavyplayer.audioplayerrecorder.service.manager;
 
+import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
+
 import android.app.Activity;
 import android.app.Service;
 import android.content.ComponentName;
@@ -9,132 +11,141 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
 
 public class ServiceManager implements ServiceConnection {
-	private IBinder mBinder;
+    private IBinder mBinder;
 
-	private Activity mActivity;
-	private Class<?> mServiceClass;
+    private Activity mActivity;
+    private Class<?> mServiceClass;
 
-	private boolean mIsPortrait;
-	private boolean mIsServiceRunning;
+    private boolean mIsPortrait;
+    private boolean mIsServiceRunning;
 
-	private StateListener mStateListener;
+    private StateListener mStateListener;
 
-	public <T extends Service> ServiceManager(Activity activity, Class<T> serviceClass) {
-		mActivity = activity;
-		mServiceClass = serviceClass;
+    public <T extends Service> ServiceManager(Activity activity, Class<T> serviceClass) {
+        mActivity = activity;
+        mServiceClass = serviceClass;
 
-		mIsPortrait = isPortrait();
+        mIsPortrait = isPortrait();
 
-		startService();
-	}
+        startService();
+    }
 
-	final public void onActivityResume() {
-		onActivateService(!mIsServiceRunning);
-	}
+    final public void onActivityResume() {
+        onActivateService(!mIsServiceRunning);
+    }
 
-	final public void onActivityPause() {
-		onDeactivateService(mIsPortrait == isPortrait());
-	}
+    final public void onActivityPause() {
+        onDeactivateService(mIsPortrait == isPortrait());
+    }
 
-	final public void onFragmentResume() {
-		onActivityResume();
-	}
+    final public void onFragmentResume() {
+        onActivityResume();
+    }
 
-	final public void onFragmentPause() {
-		onActivityPause();
-	}
+    final public void onFragmentPause() {
+        onActivityPause();
+    }
 
-	protected void onActivateService(boolean startService) {
-		if(startService)
-			startService();
+    protected void onActivateService(boolean startService) {
+        if (startService) {
+            startService();
+        }
 
-		bindService();
-	}
+        bindService();
+    }
 
-	protected void onDeactivateService(boolean stopService) {
-		unbindService();
+    protected void onDeactivateService(boolean stopService) {
+        unbindService();
 
-		if(stopService)
-			stopService();
-	}
+        if (stopService) {
+            stopService();
+        }
+    }
 
-	protected void startService() {
-		mActivity.startService(new Intent(mActivity, mServiceClass));
+    protected void startService() {
+        mActivity.startService(new Intent(mActivity, mServiceClass));
 
-		mIsServiceRunning = true;
-	}
+        mIsServiceRunning = true;
+    }
 
-	protected void stopService() {
-		if(mStateListener != null)
-			mStateListener.onServiceStop();
+    protected void stopService() {
+        if (mStateListener != null) {
+            mStateListener.onServiceStop();
+        }
 
-		mActivity.stopService(new Intent(mActivity, mServiceClass));
+        mActivity.stopService(new Intent(mActivity, mServiceClass));
 
-		mIsServiceRunning = false;
-	}
+        mIsServiceRunning = false;
+    }
 
-	protected void bindService() {
-		mActivity.bindService(
-				new Intent(mActivity, mServiceClass),
-				this,
-				Context.BIND_AUTO_CREATE);
-	}
+    protected void bindService() {
+        mActivity.bindService(
+                new Intent(mActivity, mServiceClass),
+                this,
+                Context.BIND_AUTO_CREATE);
+    }
 
-	protected void unbindService() {
-		if(mBinder != null) {
-			if(mStateListener != null)
-				mStateListener.onServiceUnbind(mBinder);
+    protected void unbindService() {
+        if (mBinder != null) {
+            if (mStateListener != null) {
+                mStateListener.onServiceUnbind(mBinder);
+            }
 
-			mBinder = null;
-		}
+            mBinder = null;
+        }
 
-		mActivity.unbindService(this);
-	}
+        mActivity.unbindService(this);
+    }
 
-	protected boolean isPortrait() {
-		DisplayMetrics displaymetrics = new DisplayMetrics();
-		mActivity.getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
-		return displaymetrics.heightPixels > displaymetrics.widthPixels;
-	}
+    protected boolean isPortrait() {
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        mActivity.getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+        return displaymetrics.heightPixels > displaymetrics.widthPixels;
+    }
 
-	public IBinder getBinder() {
-		return mBinder;
-	}
+    public IBinder getBinder() {
+        return mBinder;
+    }
 
-	@Override
-	final public void onServiceConnected(ComponentName name, IBinder service) {
-		mBinder = service;
+    @Override
+    final public void onServiceConnected(ComponentName name, IBinder service) {
+        mBinder = service;
 
-		if(mStateListener != null)
-			mStateListener.onServiceBind(mBinder);
+        if (mStateListener != null) {
+            mStateListener.onServiceBind(mBinder);
+        }
 
-		if(BuildUtils.isDebug(mActivity))
-			Log.i(mServiceClass.getSimpleName(), "Local service connected");
-	}
+        if (BuildUtils.isDebug(mActivity)) {
+            Log.i(mServiceClass.getSimpleName(), "Local service connected");
+        }
+    }
 
-	@Override
-	final public void onServiceDisconnected(ComponentName name) {
-		mBinder = null;
-		if(mStateListener != null)
-			mStateListener.onServiceUnbind(null);
+    @Override
+    final public void onServiceDisconnected(ComponentName name) {
+        mBinder = null;
+        if (mStateListener != null) {
+            mStateListener.onServiceUnbind(null);
+        }
 
-		if(BuildUtils.isDebug(mActivity))
-			Log.i(mServiceClass.getSimpleName(), "Local service disconnected");
-	}
+        if (BuildUtils.isDebug(mActivity)) {
+            Log.i(mServiceClass.getSimpleName(), "Local service disconnected");
+        }
+    }
 
-	public void setServiceStateListener(StateListener listener) {
-		mStateListener = listener;
-	}
+    public void setServiceStateListener(StateListener listener) {
+        mStateListener = listener;
+    }
 
-	public static interface StateListener {
-		public void onServiceBind(IBinder binder);
-		/**
-		 * @param binder may be null if the service disconnects.
-		 */
-		public void onServiceUnbind(IBinder binder);
-		public void onServiceStop();
-	}
+    public interface StateListener {
+        void onServiceBind(IBinder binder);
+
+        /**
+         * @param binder may be null if the service disconnects.
+         */
+        void onServiceUnbind(IBinder binder);
+
+        void onServiceStop();
+    }
 }

@@ -1,5 +1,9 @@
 package com.heavyplayer.audioplayerrecorder.service;
 
+import com.heavyplayer.audioplayerrecorder.util.AudioPlayerHandler;
+import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
+import com.heavyplayer.audioplayerrecorder.widget.AudioPlayerLayout;
+
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -8,89 +12,83 @@ import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import com.heavyplayer.audioplayerrecorder.util.AudioPlayerHandler;
-import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
-import com.heavyplayer.audioplayerrecorder.widget.AudioPlayerLayout;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 public class AudioPlayerService extends Service {
-	private static final String LOG_TAG = AudioPlayerService.class.getSimpleName();
+    private static final String LOG_TAG = AudioPlayerService.class.getSimpleName();
 
-	private IBinder mBinder;
+    private IBinder mBinder;
 
-	private Handler mHandler;
+    private Handler mHandler;
 
-	private Map<Long, AudioPlayerHandler> mPlayers = new HashMap<>(6);
+    private Map<Long, AudioPlayerHandler> mPlayers = new HashMap<>(6);
 
-	@Override
-	public void onCreate() {
-		if(BuildUtils.isDebug(this))
-			Log.i(LOG_TAG, "Local service started");
+    @Override
+    public void onCreate() {
+        if (BuildUtils.isDebug(this)) {
+            Log.i(LOG_TAG, "Local service started");
+        }
 
-		mBinder = onCreateLocalBinder();
+        mBinder = onCreateLocalBinder();
 
-		mHandler = new Handler();
-	}
+        mHandler = new Handler();
+    }
 
-	protected LocalBinder onCreateLocalBinder() {
-		return new LocalBinder();
-	}
+    protected LocalBinder onCreateLocalBinder() {
+        return new LocalBinder();
+    }
 
-	@Override
-	public int onStartCommand(Intent intent, int flags, int startId) {
-		// We want this service to continue running until it is explicitly stopped, so return sticky.
-		return START_STICKY;
-	}
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        // We want this service to continue running until it is explicitly stopped, so return sticky.
+        return START_STICKY;
+    }
 
-	public void destroy() {
-		final Iterator<AudioPlayerHandler> it = mPlayers.values().iterator();
-		while(it.hasNext()) {
-			final AudioPlayerHandler player = it.next();
-			player.destroy();
-			it.remove();
-		}
-	}
+    public void destroy() {
+        final Iterator<AudioPlayerHandler> it = mPlayers.values().iterator();
+        while (it.hasNext()) {
+            it.next().destroy();
+            it.remove();
+        }
+    }
 
-	@Override
-	public void onDestroy() {
-		destroy();
+    @Override
+    public void onDestroy() {
+        destroy();
 
-		if(BuildUtils.isDebug(this))
-			Log.i(LOG_TAG, "Local service stopped");
-	}
+        if (BuildUtils.isDebug(this)) {
+            Log.i(LOG_TAG, "Local service stopped");
+        }
+    }
 
-	@Override
-	public IBinder onBind(Intent intent) {
-		return mBinder;
-	}
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
 
-	public class LocalBinder extends Binder {
-		public void register(long id, Uri fileUri, boolean showBufferIfPossible, AudioPlayerLayout view) {
-			AudioPlayerHandler player = mPlayers.get(id);
-			if(player == null) {
-				player = onCreateAudioPlayerHandler(
-						AudioPlayerService.this,
-						id,
-						fileUri,
-						showBufferIfPossible,
-						mHandler);
+    public class LocalBinder extends Binder {
+        public void register(long id, Uri fileUri, boolean showBufferIfPossible, AudioPlayerLayout view) {
+            AudioPlayerHandler player = mPlayers.get(id);
+            if (player == null) {
+                player = onCreateAudioPlayerHandler(
+                        AudioPlayerService.this, id, fileUri, showBufferIfPossible, mHandler);
 
-				mPlayers.put(id, player);
-			}
+                mPlayers.put(id, player);
+            }
 
-			player.registerView(view);
-		}
+            player.registerView(view);
+        }
 
-		public void destroyPlayers() {
-			destroy();
-		}
-	}
+        public void destroyPlayers() {
+            destroy();
+        }
+    }
 
-	public AudioPlayerHandler onCreateAudioPlayerHandler(Context context, long id, Uri fileUri,
-	                                                     boolean showBufferIfPossible, Handler handler) {
-		return new AudioPlayerHandler(context, fileUri, showBufferIfPossible, handler);
-	}
+    public AudioPlayerHandler onCreateAudioPlayerHandler(Context context, long id, Uri fileUri,
+                                                         boolean showBufferIfPossible, Handler handler) {
+        return new AudioPlayerHandler(context, fileUri, showBufferIfPossible, handler);
+    }
 }

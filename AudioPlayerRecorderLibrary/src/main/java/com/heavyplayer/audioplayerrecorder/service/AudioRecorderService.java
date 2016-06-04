@@ -1,5 +1,9 @@
 package com.heavyplayer.audioplayerrecorder.service;
 
+import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
+import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
+import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
+
 import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
@@ -13,277 +17,287 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
-import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
-import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
-import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 
 public class AudioRecorderService extends Service implements AudioManager.OnAudioFocusChangeListener {
-	public static final String LOG_TAG = AudioRecorderService.class.getSimpleName();
+    public static final String LOG_TAG = AudioRecorderService.class.getSimpleName();
 
-	private final static int UPDATE_INTERVAL_MS = 100;
+    private final static int UPDATE_INTERVAL_MS = 100;
 
-	private final IBinder mBinder = new LocalBinder();
+    private final IBinder mBinder = new LocalBinder();
 
-	private Handler mHandler;
+    private Handler mHandler;
 
-	private AudioRecorderMicrophone mMicrophone;
-	private MicrophoneAmplitudeUpdater mMicrophoneAmplitudeUpdater = new MicrophoneAmplitudeUpdater();
+    private AudioRecorderMicrophone mMicrophone;
+    private MicrophoneAmplitudeUpdater mMicrophoneAmplitudeUpdater = new MicrophoneAmplitudeUpdater();
 
-	private AudioRecorderStateListener mStateListener;
+    private AudioRecorderStateListener mStateListener;
 
-	private Long mTimeLimit;
-	private TimeLimitStopper mTimeLimitStopper = new TimeLimitStopper();
+    private Long mTimeLimit;
+    private TimeLimitStopper mTimeLimitStopper = new TimeLimitStopper();
 
-	private Uri mFileUri;
+    private Uri mFileUri;
 
-	private MediaRecorder mRecorder;
-	private boolean mIsRecording;
+    private MediaRecorder mRecorder;
+    private boolean mIsRecording;
 
-	@Override
-	public void onCreate() {
-		mHandler = new Handler();
+    @Override
+    public void onCreate() {
+        mHandler = new Handler();
 
-		mIsRecording = false;
+        mIsRecording = false;
 
-		if(BuildUtils.isDebug(this))
-			Log.i(LOG_TAG, "Local service started");
-	}
+        if (BuildUtils.isDebug(this)) {
+            Log.i(LOG_TAG, "Local service started");
+        }
+    }
 
-	@Override
-	public int onStartCommand(Intent intent, int flags, int startId) {
-		// We want this service to continue running until it is explicitly stopped, so return sticky.
-		return START_STICKY;
-	}
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        // We want this service to continue running until it is explicitly stopped, so return sticky.
+        return START_STICKY;
+    }
 
-	@SuppressLint("InlinedApi")
-	protected void start(Uri fileUri) {
-		// If the output file changes, we want to stop the current recording.
-		if(mFileUri == null || !mFileUri.equals(fileUri)) {
-			stop();
-			mFileUri = fileUri;
-		}
+    @SuppressLint("InlinedApi")
+    protected void start(Uri fileUri) {
+        // If the output file changes, we want to stop the current recording.
+        if (mFileUri == null || !mFileUri.equals(fileUri)) {
+            stop();
+            mFileUri = fileUri;
+        }
 
-		if(!mIsRecording && mFileUri != null) {
-			gainAudioFocus();
+        if (!mIsRecording && mFileUri != null) {
+            gainAudioFocus();
 
-			if(mRecorder == null)
-				mRecorder = new MediaRecorder();
+            if (mRecorder == null) {
+                mRecorder = new MediaRecorder();
+            }
 
-			try {
-				// Configure recorder.
-				mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-				mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-				mRecorder.setOutputFile(mFileUri.getPath());
-				mRecorder.setAudioEncoder(Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1 ?
-						MediaRecorder.AudioEncoder.AAC
-						: 3); /* MediaRecorder.AudioEncoder.AAC was hidden in previous versions, but it's 3. */
-				mRecorder.setAudioChannels(1);
-				mRecorder.setAudioSamplingRate(22050);
-				mRecorder.setAudioEncodingBitRate(65536);
+            try {
+                // Configure recorder.
+                mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+                mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+                mRecorder.setOutputFile(mFileUri.getPath());
+                /* MediaRecorder.AudioEncoder.AAC was hidden in previous versions, but it's 3. */
+                mRecorder.setAudioEncoder(Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1 ?
+                                          MediaRecorder.AudioEncoder.AAC : 3);
+                mRecorder.setAudioChannels(1);
+                mRecorder.setAudioSamplingRate(22050);
+                mRecorder.setAudioEncodingBitRate(65536);
 
-				mRecorder.prepare();
+                mRecorder.prepare();
 
-				// Start recording.
-				mRecorder.start();
-				
-				mIsRecording = true;
+                // Start recording.
+                mRecorder.start();
 
-				scheduleTimeLimitStopper();
+                mIsRecording = true;
 
-				updateMicrophoneState();
+                scheduleTimeLimitStopper();
 
-				startMicrophoneUpdater();
+                updateMicrophoneState();
 
-				if(mStateListener != null)
-					mStateListener.onStartRecorder();
-			}
-			catch(Exception e) {
-				Log.w(LOG_TAG, e);
+                startMicrophoneUpdater();
 
-				if(mStateListener != null)
-					mStateListener.onStartRecorderFailed(e);
-			}
-		}
-	}
+                if (mStateListener != null) {
+                    mStateListener.onStartRecorder();
+                }
+            } catch (Exception e) {
+                Log.w(LOG_TAG, e);
 
-	protected void stop() {
-		if(mIsRecording) {
-			if(mRecorder != null) {
-				try {
-					mRecorder.stop();
-				}
-				catch(Exception e) {
-					// This can happen, for instance, when stop is called immediately after start.
-					// We will act like if the stop was successful, since the recording is stopped nonetheless.
-					Log.w(LOG_TAG, e);
-				}
+                if (mStateListener != null) {
+                    mStateListener.onStartRecorderFailed(e);
+                }
+            }
+        }
+    }
 
-				mRecorder.reset();
+    protected void stop() {
+        if (mIsRecording) {
+            if (mRecorder != null) {
+                try {
+                    mRecorder.stop();
+                } catch (Exception e) {
+                    // This can happen, for instance, when stop is called immediately after start.
+                    // We will act like if the stop was successful, since the recording is stopped nonetheless.
+                    Log.w(LOG_TAG, e);
+                }
 
-				mIsRecording = false;
+                mRecorder.reset();
 
-				removeTimeLimitStopper();
+                mIsRecording = false;
 
-				updateMicrophoneState();
+                removeTimeLimitStopper();
 
-				if(mStateListener != null)
-					mStateListener.onStopRecorder();
-			}
+                updateMicrophoneState();
 
-			abandonAudioFocus();
-		}
-	}
+                if (mStateListener != null) {
+                    mStateListener.onStopRecorder();
+                }
+            }
 
-	protected void destroy() {
-		stop();
+            abandonAudioFocus();
+        }
+    }
 
-		if(mRecorder != null) {
-			mRecorder.release();
-			mRecorder = null;
-		}
-	}
+    protected void destroy() {
+        stop();
 
-	@Override
-	public void onDestroy() {
-		destroy();
+        if (mRecorder != null) {
+            mRecorder.release();
+            mRecorder = null;
+        }
+    }
 
-		if(BuildUtils.isDebug(this))
-			Log.i(LOG_TAG, "Local service stopped");
-	}
+    @Override
+    public void onDestroy() {
+        destroy();
 
-	protected void gainAudioFocus() {
-		final int durationHint;
-		if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT)
-			durationHint = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT;
-		else
-			// Request audio focus for recording without being disturbed by system sounds.
-			durationHint = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE;
+        if (BuildUtils.isDebug(this)) {
+            Log.i(LOG_TAG, "Local service stopped");
+        }
+    }
 
-		final AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
-		audioManager.requestAudioFocus(
-				this,
-				AudioManager.STREAM_MUSIC,
-				durationHint);
-	}
+    protected void gainAudioFocus() {
+        final int durationHint;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+            durationHint = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT;
+        } else {
+            // Request audio focus for recording without being disturbed by system sounds.
+            durationHint = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE;
+        }
 
-	protected void abandonAudioFocus() {
-		// Abandon audio focus when the recording complete.
-		final AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
-		audioManager.abandonAudioFocus(this);
-	}
+        final AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioManager.requestAudioFocus(
+                this,
+                AudioManager.STREAM_MUSIC,
+                durationHint);
+    }
 
-	@Override
-	public void onAudioFocusChange(int focusChange) {
-		// Do nothing.
-	}
+    protected void abandonAudioFocus() {
+        // Abandon audio focus when the recording complete.
+        final AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioManager.abandonAudioFocus(this);
+    }
 
-	protected void scheduleTimeLimitStopper() {
-		if(mTimeLimit != null)
-			mHandler.postDelayed(mTimeLimitStopper, mTimeLimit);
-	}
+    @Override
+    public void onAudioFocusChange(int focusChange) {
+        // Do nothing.
+    }
 
-	protected void removeTimeLimitStopper() {
-		mHandler.removeCallbacks(mTimeLimitStopper);
-	}
+    protected void scheduleTimeLimitStopper() {
+        if (mTimeLimit != null) {
+            mHandler.postDelayed(mTimeLimitStopper, mTimeLimit);
+        }
+    }
 
-	protected void updateMicrophoneState() {
-		if(mMicrophone != null) {
-			mMicrophone.setSelected(mIsRecording);
+    protected void removeTimeLimitStopper() {
+        mHandler.removeCallbacks(mTimeLimitStopper);
+    }
 
-			if(!mIsRecording)
-				mMicrophone.updateAmplitude(0, UPDATE_INTERVAL_MS * 3);
-		}
-	}
+    protected void updateMicrophoneState() {
+        if (mMicrophone != null) {
+            mMicrophone.setSelected(mIsRecording);
 
-	protected void startMicrophoneUpdater() {
-		// Star updating microphones amplitude.
-		mHandler.removeCallbacks(mMicrophoneAmplitudeUpdater);
-		mHandler.post(mMicrophoneAmplitudeUpdater);
-	}
+            if (!mIsRecording) {
+                mMicrophone.updateAmplitude(0, UPDATE_INTERVAL_MS * 3);
+            }
+        }
+    }
 
-	private class MicrophoneAmplitudeUpdater implements Runnable {
-		@Override
-		public void run() {
-			if(mIsRecording && mRecorder != null && mMicrophone != null) {
-				final int amplitude = mRecorder.getMaxAmplitude();
+    protected void startMicrophoneUpdater() {
+        // Star updating microphones amplitude.
+        mHandler.removeCallbacks(mMicrophoneAmplitudeUpdater);
+        mHandler.post(mMicrophoneAmplitudeUpdater);
+    }
 
-				mMicrophone.updateAmplitude(amplitude, UPDATE_INTERVAL_MS);
+    private class MicrophoneAmplitudeUpdater implements Runnable {
+        @Override
+        public void run() {
+            if (mIsRecording && mRecorder != null && mMicrophone != null) {
+                final int amplitude = mRecorder.getMaxAmplitude();
 
-				// Post animation runnable to update the animation.
-				mHandler.postDelayed(mMicrophoneAmplitudeUpdater, UPDATE_INTERVAL_MS);
-			}
-		}
-	}
+                mMicrophone.updateAmplitude(amplitude, UPDATE_INTERVAL_MS);
 
-	/**
-	 * Stops the recorder if the time limit is reached.
-	 */
-	public class TimeLimitStopper implements Runnable {
-		@Override
-		public void run() {
-			stop();
+                // Post animation runnable to update the animation.
+                mHandler.postDelayed(mMicrophoneAmplitudeUpdater, UPDATE_INTERVAL_MS);
+            }
+        }
+    }
 
-			if(mStateListener != null)
-				mStateListener.onTimeLimitExceeded();
-		}
-	}
+    /**
+     * Stops the recorder if the time limit is reached.
+     */
+    public class TimeLimitStopper implements Runnable {
+        @Override
+        public void run() {
+            stop();
 
-	@Override
-	public IBinder onBind(Intent intent) {
-		return mBinder;
-	}
+            if (mStateListener != null) {
+                mStateListener.onTimeLimitExceeded();
+            }
+        }
+    }
 
-	public class LocalBinder extends Binder {
-		public void register(AudioRecorderMicrophone microphone, AudioRecorderStateListener listener) {
-			mMicrophone = microphone;
-			mStateListener = listener;
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
 
-			// Configure microphone state.
-			microphone.setSelected(mIsRecording);
+    public class LocalBinder extends Binder {
+        public void register(AudioRecorderMicrophone microphone, AudioRecorderStateListener listener) {
+            mMicrophone = microphone;
+            mStateListener = listener;
 
-			microphone.setOnDetachListener(new OnDetachListener() {
-				@Override
-				public void onDetachedFromWindow(View v) {
-					if(mMicrophone == v)
-						mMicrophone = null;
-				}
+            // Configure microphone state.
+            microphone.setSelected(mIsRecording);
 
-				@Override
-				public void onStartTemporaryDetach(View v) { }
-			});
+            microphone.setOnDetachListener(new OnDetachListener() {
+                @Override
+                public void onDetachedFromWindow(View v) {
+                    if (mMicrophone == v) {
+                        mMicrophone = null;
+                    }
+                }
 
-			// Start microphone update.
-			startMicrophoneUpdater();
-		}
+                @Override
+                public void onStartTemporaryDetach(View v) {
+                }
+            });
 
-		/**
-		 * Time limit will apply the next time you call {@link #startRecorder(android.net.Uri)}.
-		 */
-		public void setTimeLimit(long timeLimit) {
-			mTimeLimit = timeLimit;
-		}
+            // Start microphone update.
+            startMicrophoneUpdater();
+        }
 
-		public void startRecorder(Uri fileUri) {
-			start(fileUri);
-		}
+        /**
+         * Time limit will apply the next time you call {@link #startRecorder(android.net.Uri)}.
+         */
+        public void setTimeLimit(long timeLimit) {
+            mTimeLimit = timeLimit;
+        }
 
-		public void stopRecorder() {
-			stop();
-		}
+        public void startRecorder(Uri fileUri) {
+            start(fileUri);
+        }
 
-		public void destroyRecorder() {
-			destroy();
-		}
+        public void stopRecorder() {
+            stop();
+        }
 
-		public boolean isRecording() {
-			return mIsRecording;
-		}
-	}
+        public void destroyRecorder() {
+            destroy();
+        }
 
-	public static interface AudioRecorderStateListener {
-		public void onStartRecorder();
-		public void onStartRecorderFailed(Exception e);
-		public void onStopRecorder();
-		public void onTimeLimitExceeded();
-	}
+        public boolean isRecording() {
+            return mIsRecording;
+        }
+    }
+
+    public interface AudioRecorderStateListener {
+        void onStartRecorder();
+
+        void onStartRecorderFailed(Exception e);
+
+        void onStopRecorder();
+
+        void onTimeLimitExceeded();
+    }
 }
