@@ -1,7 +1,7 @@
 package com.heavyplayer.audioplayerrecorder.service;
 
+import com.heavyplayer.audioplayerrecorder.BuildConfig;
 import com.heavyplayer.audioplayerrecorder.util.AudioPlayerHandler;
-import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
 import com.heavyplayer.audioplayerrecorder.widget.AudioPlayerLayout;
 
 import android.app.Service;
@@ -28,7 +28,7 @@ public class AudioPlayerService extends Service {
 
     @Override
     public void onCreate() {
-        if (BuildUtils.isDebug(this)) {
+        if (BuildConfig.DEBUG) {
             Log.i(LOG_TAG, "Local service started");
         }
 
@@ -59,7 +59,7 @@ public class AudioPlayerService extends Service {
     public void onDestroy() {
         destroy();
 
-        if (BuildUtils.isDebug(this)) {
+        if (BuildConfig.DEBUG) {
             Log.i(LOG_TAG, "Local service stopped");
         }
     }

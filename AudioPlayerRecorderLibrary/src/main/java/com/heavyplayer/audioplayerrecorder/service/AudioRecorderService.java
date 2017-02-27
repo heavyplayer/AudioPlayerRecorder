@@ -1,6 +1,6 @@
 package com.heavyplayer.audioplayerrecorder.service;
 
-import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
+import com.heavyplayer.audioplayerrecorder.BuildConfig;
 import com.heavyplayer.audioplayerrecorder.widget.AudioRecorderMicrophone;
 import com.heavyplayer.audioplayerrecorder.widget.interface_.OnDetachListener;
 
@@ -46,7 +46,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
 
         mIsRecording = false;
 
-        if (BuildUtils.isDebug(this)) {
+        if (BuildConfig.DEBUG) {
             Log.i(LOG_TAG, "Local service started");
         }
     }
@@ -151,7 +151,7 @@ public class AudioRecorderService extends Service implements AudioManager.OnAudi
     public void onDestroy() {
         destroy();
 
-        if (BuildUtils.isDebug(this)) {
+        if (BuildConfig.DEBUG) {
             Log.i(LOG_TAG, "Local service stopped");
         }
     }

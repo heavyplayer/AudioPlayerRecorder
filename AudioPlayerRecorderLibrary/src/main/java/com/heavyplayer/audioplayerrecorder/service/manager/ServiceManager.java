@@ -1,6 +1,6 @@
 package com.heavyplayer.audioplayerrecorder.service.manager;
 
-import com.heavyplayer.audioplayerrecorder.util.BuildUtils;
+import com.heavyplayer.audioplayerrecorder.BuildConfig;
 
 import android.app.Activity;
 import android.app.Service;
@@ -117,7 +117,7 @@ public class ServiceManager implements ServiceConnection {
             mStateListener.onServiceBind(mBinder);
         }
 
-        if (BuildUtils.isDebug(mActivity)) {
+        if (BuildConfig.DEBUG) {
             Log.i(mServiceClass.getSimpleName(), "Local service connected");
         }
     }
@@ -129,7 +129,7 @@ public class ServiceManager implements ServiceConnection {
             mStateListener.onServiceUnbind(null);
         }
 
-        if (BuildUtils.isDebug(mActivity)) {
+        if (BuildConfig.DEBUG) {
             Log.i(mServiceClass.getSimpleName(), "Local service disconnected");
         }
     }
