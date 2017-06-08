@@ -77,6 +77,10 @@ public class AudioPlayerService extends Service {
                         AudioPlayerService.this, id, fileUri, showBufferIfPossible, mHandler);
 
                 mPlayers.put(id, player);
+            } else {
+                player.destroy();
+                player.setFileUri(fileUri);
+                player.create();
             }
 
             player.registerView(view);
