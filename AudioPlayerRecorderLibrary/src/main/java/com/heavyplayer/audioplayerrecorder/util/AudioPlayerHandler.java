@@ -52,7 +52,7 @@ public class AudioPlayerHandler
         create();
     }
 
-    public void create() {
+    protected void create() {
         mMediaPlayer = new SafeMediaPlayer();
         mMediaPlayer.setOnPreparedListener(this);
         mMediaPlayer.setOnStartListener(this);
