@@ -65,6 +65,12 @@ public class AudioPlayerHandler
         configureRegisteredViews();
     }
 
+    public void recreate(Uri newFileUri) {
+        destroy();
+        mFileUri = newFileUri;
+        create();
+    }
+
     public void destroy() {
         clearRegisteredViews();
 
@@ -87,10 +93,6 @@ public class AudioPlayerHandler
         mBufferingCurrentPosition = null;
 
         abandonAudioFocus();
-    }
-
-    public void setFileUri(Uri fileUri) {
-        mFileUri = fileUri;
     }
 
     protected void start(boolean gainAudioFocus, boolean updateButton) {

@@ -78,9 +78,7 @@ public class AudioPlayerService extends Service {
 
                 mPlayers.put(id, player);
             } else {
-                player.destroy();
-                player.setFileUri(fileUri);
-                player.create();
+                player.recreate(fileUri);
             }
 
             player.registerView(view);
