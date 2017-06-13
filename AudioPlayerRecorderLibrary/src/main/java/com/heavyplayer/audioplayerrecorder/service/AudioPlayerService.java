@@ -77,6 +77,8 @@ public class AudioPlayerService extends Service {
                         AudioPlayerService.this, id, fileUri, showBufferIfPossible, mHandler);
 
                 mPlayers.put(id, player);
+            } else {
+                player.recreate(fileUri);
             }
 
             player.registerView(view);
@@ -84,6 +86,13 @@ public class AudioPlayerService extends Service {
 
         public void destroyPlayers() {
             destroy();
+        }
+
+        public void destroyPlayer(long id) {
+            AudioPlayerHandler player = mPlayers.get(id);
+            if (player != null) {
+                player.destroy();
+            }
         }
     }
 

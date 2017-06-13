@@ -65,6 +65,12 @@ public class AudioPlayerHandler
         configureRegisteredViews();
     }
 
+    public void recreate(Uri newFileUri) {
+        destroy();
+        mFileUri = newFileUri;
+        create();
+    }
+
     public void destroy() {
         clearRegisteredViews();
 
