@@ -47,7 +47,7 @@ public class AudioPlayerService extends Service {
         return START_STICKY;
     }
 
-    public void destroyAll() {
+    public void destroy() {
         final Iterator<AudioPlayerHandler> it = mPlayers.values().iterator();
         while (it.hasNext()) {
             it.next().destroy();
@@ -57,7 +57,7 @@ public class AudioPlayerService extends Service {
 
     @Override
     public void onDestroy() {
-        destroyAll();
+        destroy();
 
         if (BuildConfig.DEBUG) {
             Log.i(LOG_TAG, "Local service stopped");
@@ -85,7 +85,7 @@ public class AudioPlayerService extends Service {
         }
 
         public void destroyPlayers() {
-            destroyAll();
+            destroy();
         }
 
         public void destroyPlayer(long id) {
