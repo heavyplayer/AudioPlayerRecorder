@@ -1,2 +1,2 @@
-include ':AudioPlayerRecorderSamples'
 include ':AudioPlayerRecorderLibrary'
+include ':AudioPlayerRecorderSamples'
