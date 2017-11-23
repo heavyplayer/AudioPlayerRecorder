@@ -50,15 +50,15 @@ public class PlayerActivity extends RecorderActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        mAudioPlayerServiceManager.onActivityResume();
+    protected void onStart() {
+        super.onStart();
+        mAudioPlayerServiceManager.onActivityStart();
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        mAudioPlayerServiceManager.onActivityPause();
+    protected void onStop() {
+        super.onStop();
+        mAudioPlayerServiceManager.onActivityStop();
     }
 
     protected class AudioPlayerItemAdapter extends ItemAdapter {
