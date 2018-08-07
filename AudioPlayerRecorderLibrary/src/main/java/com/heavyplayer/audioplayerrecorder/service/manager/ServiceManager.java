@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
-import android.util.DisplayMetrics;
 import android.util.Log;
 
 public class ServiceManager implements ServiceConnection {
@@ -18,56 +17,41 @@ public class ServiceManager implements ServiceConnection {
     private Activity mActivity;
     private Class<?> mServiceClass;
 
-    private boolean mIsPortrait;
-    private boolean mIsServiceRunning;
-
     private StateListener mStateListener;
 
     public <T extends Service> ServiceManager(Activity activity, Class<T> serviceClass) {
         mActivity = activity;
         mServiceClass = serviceClass;
 
-        mIsPortrait = isPortrait();
-
         startService();
     }
 
-    final public void onActivityStart() {
-        onActivateService(!mIsServiceRunning);
+    final public void onStart() {
+        onActivateService();
     }
 
-    final public void onActivityStop() {
-        onDeactivateService(mIsPortrait == isPortrait());
+    final public void onStop() {
+        onDeactivateService(!mActivity.isChangingConfigurations());
     }
 
-    final public void onFragmentStart() {
-        onActivityStart();
-    }
-
-    final public void onFragmentStop() {
-        onActivityStop();
-    }
-
-    protected void onActivateService(boolean startService) {
-        if (startService) {
-            startService();
-        }
-
+    protected void onActivateService() {
         bindService();
+
+        // Ensure service keeps running until we explicitly stop it,
+        // which is always except when configuration changes occur.
+        startService();
     }
 
     protected void onDeactivateService(boolean stopService) {
-        unbindService();
-
         if (stopService) {
             stopService();
         }
+
+        unbindService();
     }
 
     protected void startService() {
         mActivity.startService(new Intent(mActivity, mServiceClass));
-
-        mIsServiceRunning = true;
     }
 
     protected void stopService() {
@@ -76,8 +60,6 @@ public class ServiceManager implements ServiceConnection {
         }
 
         mActivity.stopService(new Intent(mActivity, mServiceClass));
-
-        mIsServiceRunning = false;
     }
 
     protected void bindService() {
@@ -97,12 +79,6 @@ public class ServiceManager implements ServiceConnection {
         }
 
         mActivity.unbindService(this);
-    }
-
-    protected boolean isPortrait() {
-        DisplayMetrics displaymetrics = new DisplayMetrics();
-        mActivity.getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
-        return displaymetrics.heightPixels > displaymetrics.widthPixels;
     }
 
     public IBinder getBinder() {

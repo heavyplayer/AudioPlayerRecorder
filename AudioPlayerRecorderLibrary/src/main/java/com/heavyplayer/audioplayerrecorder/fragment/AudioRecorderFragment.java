@@ -61,14 +61,14 @@ public class AudioRecorderFragment extends DialogFragment
     public void onStart() {
         super.onStart();
 
-        mAudioRecorderServiceManager.onFragmentStart();
+        mAudioRecorderServiceManager.onStart();
     }
 
     @Override
     public void onStop() {
         super.onStop();
 
-        mAudioRecorderServiceManager.onFragmentStop();
+        mAudioRecorderServiceManager.onStop();
     }
 
     public Dialog onCreateDialog(Bundle savedInstanceState) {
