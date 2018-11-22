@@ -52,13 +52,13 @@ public class PlayerActivity extends RecorderActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        mAudioPlayerServiceManager.onActivityResume();
+        mAudioPlayerServiceManager.onStart();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        mAudioPlayerServiceManager.onActivityPause();
+        mAudioPlayerServiceManager.onStop();
     }
 
     protected class AudioPlayerItemAdapter extends ItemAdapter {
