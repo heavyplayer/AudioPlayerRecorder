@@ -11,13 +11,14 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.annotation.Nullable;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListAdapter;
 import android.widget.Toast;
 
 import java.io.File;
+
+import androidx.annotation.Nullable;
 
 public class PlayerActivity extends RecorderActivity {
     protected AudioPlayerServiceManager mAudioPlayerServiceManager;

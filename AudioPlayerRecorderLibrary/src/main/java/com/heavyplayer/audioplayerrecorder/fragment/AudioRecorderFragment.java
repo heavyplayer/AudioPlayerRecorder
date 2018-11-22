@@ -12,10 +12,11 @@ import android.app.Dialog;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
+
+import androidx.fragment.app.DialogFragment;
 
 public class AudioRecorderFragment extends DialogFragment
         implements View.OnClickListener, ServiceManager.StateListener, AudioRecorderService.AudioRecorderStateListener {
