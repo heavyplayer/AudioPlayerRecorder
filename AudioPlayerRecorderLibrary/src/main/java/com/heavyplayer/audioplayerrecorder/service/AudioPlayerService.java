@@ -17,14 +17,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class AudioPlayerService extends Service {
+public class AudioPlayerService<ID> extends Service {
     private static final String LOG_TAG = AudioPlayerService.class.getSimpleName();
 
     private IBinder mBinder;
 
     private Handler mHandler;
 
-    private Map<Long, AudioPlayerHandler> mPlayers = new HashMap<>(6);
+    private Map<ID, AudioPlayerHandler> mPlayers = new HashMap<>(6);
 
     @Override
     public void onCreate() {
@@ -70,7 +70,7 @@ public class AudioPlayerService extends Service {
     }
 
     public class LocalBinder extends Binder {
-        public void register(long id, Uri fileUri, boolean showBufferIfPossible, AudioPlayerLayout view) {
+        public void register(ID id, Uri fileUri, boolean showBufferIfPossible, AudioPlayerLayout view) {
             AudioPlayerHandler player = mPlayers.get(id);
             if (player == null) {
                 player = onCreateAudioPlayerHandler(
@@ -88,7 +88,7 @@ public class AudioPlayerService extends Service {
             destroy();
         }
 
-        public void destroyPlayer(long id) {
+        public void destroyPlayer(ID id) {
             AudioPlayerHandler player = mPlayers.get(id);
             if (player != null) {
                 player.destroy();
@@ -96,7 +96,7 @@ public class AudioPlayerService extends Service {
         }
     }
 
-    public AudioPlayerHandler onCreateAudioPlayerHandler(Context context, long id, Uri fileUri,
+    public AudioPlayerHandler onCreateAudioPlayerHandler(Context context, ID id, Uri fileUri,
                                                          boolean showBufferIfPossible, Handler handler) {
         return new AudioPlayerHandler(context, fileUri, showBufferIfPossible, handler);
     }
